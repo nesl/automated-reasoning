@@ -1,0 +1,21 @@
+
+/******************************************************************************
+ * Sat solver
+ ******************************************************************************/
+
+--To get an executable, you need to have a static C library libsat.a in the
+directory lib
+
+--libsat.a should implement the functions defined in satapi.h, which is located
+in the directory include
+
+--To obtain libsat.a, please go to the directory primitives in the previous path
+
+--You should also implement the function "get_free_literal" in main.c, which
+is located in the directory src
+
+--Once you have all ingredients, you can simply type make, which would
+produce a binary executable called "sat"
+
+--You can type "./sat -help" to see its usage
+

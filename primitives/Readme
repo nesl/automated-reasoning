@@ -1,0 +1,21 @@
+
+/******************************************************************************
+ * Sat primitives 
+ ******************************************************************************/
+
+--satapi.h, located in the directory include, defines the functions you need to
+implement together with the structures you must use to represent variables,
+literals and clauses
+
+--satapi.c, located in the directory src, gives a detailed explanation for each
+function you will implement
+
+--You are free to add more C files to complete the implementation of functions
+in satapi.c (in this case do not forget to update given Makefile)
+
+--Once you are done with the implementation you can obtain a static C library
+by typing make, which would give the desired library called "libsat.a"
+
+--You can then copy libsat.a into the directory ../sat_solver/lib so that you
+can produce a sat solver 
+
