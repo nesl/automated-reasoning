@@ -41,27 +41,21 @@ int parseProblemLine(char* line, unsigned long* n, unsigned long* m){
 	return 1;
 }
 
-int parseClause(char* line, unsigned long n, unsigned long m, long* clause){
+unsigned long parseClause(char* line, unsigned long n, unsigned long m, long* clause){
 	char* pch = NULL;
-	int countvariables = 0;
+	unsigned long countvariables = 0;
 
-
+#ifdef DEBUG
 	printf("%s\n",line);
-
+#endif
 	//separate the string into space separated tokens
 	pch = strtok(line, " ");
 
 	while (pch != NULL){
-
+#ifdef DEBUG
 			printf("%s\n", pch);
-//			if(countparameters == 0 )
-//				*n = atoi(pch);
-//			else
-//				*m = atoi(pch);
+#endif
 			clause[countvariables++]=atol(pch);
-//
-//			countparameters++;
-//		}
 
 		pch = strtok (NULL, " ");
 	}
@@ -69,19 +63,17 @@ int parseClause(char* line, unsigned long n, unsigned long m, long* clause){
 	if(pch)
 	 free(pch);
 
-
-	return 1;
+	return countvariables-1; // the clause ends with 0 as a termination so we subtract this element to return teh correct value
 }
 
 
-
-void DebugCNF(unsigned long n, unsigned long m, long *cnf){
+#ifdef DEBUG
+void DebugCNF(unsigned long m, unsigned long n, long cnf[m][n]){
 
 	printf("CNF Debugging for %ld clauses \n", m);
-
-	printf("%ld",*((cnf+0*0) + 0));
+	printf("%ld",cnf[0][1]);
 }
-
+#endif
 
 int parseDIMACS(FILE* cnf_file){
 
@@ -92,8 +84,8 @@ int parseDIMACS(FILE* cnf_file){
 	unsigned long n = 0; /// number of variables
 	unsigned long m = 0; // number of clauses
 
-	long cnf[m][n]; // a pointer of clauses which points to an array of variables =  long (*a)[]
 
+	long cnf[m][n]; // a pointer of clauses which points to an array of variables =  long (*a)[]
 
 	unsigned long clausecounter = 0;
 	while((read = getline(&line, &len, cnf_file)) != -1){
@@ -104,21 +96,32 @@ int parseDIMACS(FILE* cnf_file){
 		// parse the line that starts with p (problem line  p cnf <number of variables n> <number of clauses m>)
 		if((line)[0] == 'p'){
 			parseProblemLine(line, &n, &m);
+#ifdef DEBUG
 			printf("number of clauses: %ld, number of variables: %ld\n", m,n);
+#endif
 		}
 		else
 		{
 			// read the CNF
-			parseClause(line,n, m, cnf[clausecounter++]);
-
-			printf("%ld\n", cnf[clausecounter][1]);
-
+			unsigned long vars = parseClause(line,n, m, cnf[clausecounter++]);
+#ifdef DEBUG
+			printf("access clause %ld and element 2 is %ld, number of var is this clause is %ld\n",clausecounter,cnf[clausecounter][2],vars);
+#endif
 		}
 	}
 
+#ifdef DEBUG
+	printf("Clause Counter %ld\n", clausecounter);
 
-	//Debug
-	DebugCNF(n,m, (long*)cnf);
+	for(unsigned long c = 0; c < clausecounter; c++ ){
+		printf("Debugging Clause number %ld\n", c );
+		for(unsigned long v = 0; v < n; n++){
+			printf("%ld\n",cnf[c][v]);
+		}
+	}
+	//DebugCNF(m,n, cnf);
+
+#endif
 
 	if(line)
 		free(line);
