@@ -28,7 +28,7 @@ typedef char BOOLEAN;
 
 typedef struct {
 
-  // ... TO DO ..
+	unsigned long index;
 
 } Var;
 
@@ -43,8 +43,7 @@ typedef struct {
 
 typedef struct {
 
-  // ... TO DO ..
-
+	signed long sindex;
 
 } Lit;
 
@@ -59,7 +58,8 @@ typedef struct {
 
 typedef struct {
 
-  // ... TO DO ..
+  Lit * literals;
+	bool is_subsumed;
 
 } Clause;
 
@@ -72,7 +72,11 @@ typedef struct {
 
 typedef struct {
 
-  // ... TO DO ..
+  Clause * delta;
+	Clause * gamma;
+	Literal * decisions;
+	Literal * implications;
+	Clause alpha;
 
 
 } SatState;

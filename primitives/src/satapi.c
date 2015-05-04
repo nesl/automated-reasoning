@@ -46,17 +46,18 @@ Lit* pos_literal(Var* var) {
 
   // ... TO DO ..
 	Lit l;
-	l.ind = var->ind;
+	l.sindex = var->index;
 	l.isPositive = 't';
   
-  return &l; // dummy value
+  return &l; // just so you know, this won't work
+	// l exists only in this stack frame so returning it will produce garbage
 }
 
 Lit* neg_literal(Var* var) {
 
   // ... TO DO ..
 	Lit l;
-	l.ind = var->ind - (2*var->ind);  // if index was 1000 now i want the neg literal then it is -1000 which is 1000 - 2(1000)
+	l.sindex = var->index - (2*var->index);  // if index was 1000 now i want the neg literal then it is -1000 which is 1000 - 2(1000)
     l.isNegative = 't';
 
   return &l; // dummy value
