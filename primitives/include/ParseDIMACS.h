@@ -9,8 +9,13 @@
 #define PARSEDIMACS_H_
 
 #include "satapi.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-SatState* parseDIMACS(FILE* cnf_file);
+void parseDIMACS(FILE* cnf_file, SatState* sat_state);
 
 
 

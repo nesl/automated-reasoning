@@ -1,6 +1,6 @@
 #include "satapi.h"
 #include <fcntl.h>
-
+#include "ParseDIMACS.h"
 
 /******************************************************************************
  * We explain here the functions you need to implement
@@ -24,7 +24,6 @@ Var* index2varp(unsigned long i, SatState* sat_state) {
 
   // ... TO DO ..
 
-  
   return NULL; // dummy valued
 }
 
@@ -44,31 +43,29 @@ Var* index2varp(unsigned long i, SatState* sat_state) {
  ******************************************************************************/
 Lit* pos_literal(Var* var) {
 
-  // ... TO DO ..
-	Lit l;
-	l.sindex = var->index;
-	l.isPositive = 't';
-  
-  return &l; // just so you know, this won't work
-	// l exists only in this stack frame so returning it will produce garbage
+	Lit *l;
+	l =(Lit*)malloc(sizeof(Lit));
+	l->sindex = var->index;
+	//l.isPositive = 't';
+	return l;
 }
 
 Lit* neg_literal(Var* var) {
 
-  // ... TO DO ..
-	Lit l;
-	l.sindex = var->index - (2*var->index);  // if index was 1000 now i want the neg literal then it is -1000 which is 1000 - 2(1000)
-    l.isNegative = 't';
-
-  return &l; // dummy value
+	Lit* l;
+	l = (Lit*)malloc(sizeof(Lit));
+	// if index was 1000 now i want the neg literal then it is -1000 which is 1000 - 2(1000)
+	l->sindex = var->index - (2*var->index);
+   // l.isNegative = 't';
+	return l;
 }
 
 BOOLEAN set_literal(Lit* lit) {
 
   // ... TO DO ..
 	//lit->LitState
-  
-  return lit->LitState; // dummy value
+	//return lit->LitState; // dummy value
+	return 0;
 }
 
 /******************************************************************************
@@ -79,10 +76,8 @@ BOOLEAN set_literal(Lit* lit) {
  ******************************************************************************/
 Clause* index2clausep(unsigned long i, SatState* sat_state) {
 
-  // ... TO DO ..
-	Clause c = *((sat_state->Delta)+i);
+  return ((sat_state->delta)+i);
 
-  return &c; // dummy value
 }
  
 
@@ -100,7 +95,7 @@ BOOLEAN subsumed_clause(Clause* clause) {
 	// if any of its literals have the LitState =1
 	// This is buggy ... you need to check the limits of the for loop and the number of literals and make sure they work right together
 
-	Lit* clause_set_lit = clause->setLit;
+	//Lit* clause_set_lit = clause->setLit;
 //
 //	for (unsigned int i = 0; i<= clause->NumLit; i++){
 //		if((*clause_set_lit)[i]->LitState == 't')
@@ -134,7 +129,14 @@ BOOLEAN subsumed_clause(Clause* clause) {
 SatState* construct_sat_state(char* cnf_fname) {
 
   // ... TO DO ..
-  SatState* sat_state;
+
+  SatState* sat_state = (SatState*)malloc (sizeof (SatState));
+  sat_state->decisions = (Lit*)malloc(sizeof (Lit));
+  sat_state->delta = (Clause*)malloc(sizeof(Clause));
+  sat_state->gamma = (Clause*)malloc(sizeof(Clause));
+  sat_state->implications = (Lit*)malloc(sizeof(Lit));
+
+
   FILE* cnf_file = fopen(cnf_fname, "r");
   
   if (cnf_file == 0){
@@ -144,17 +146,23 @@ SatState* construct_sat_state(char* cnf_fname) {
   }
   else{
 	  // call the parser
-	  sat_state = (SatState*)parseDIMACS(cnf_file);
+	  parseDIMACS(cnf_file, sat_state);
   }
 
   fclose(cnf_file);
 
-  return sat_state; // dummy value
+  return sat_state;
 }
 
 void free_sat_state(SatState* sat_state) {
 
   // ... TO DO ..
+ //	free(sat_state->alpha);
+	free(sat_state->decisions);
+	free(sat_state->delta);
+	free(sat_state->gamma);
+	free(sat_state->implications);
+	free(sat_state);
  
   return; // dummy value
 }

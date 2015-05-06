@@ -59,7 +59,7 @@ typedef struct {
 typedef struct {
 
   Lit * literals;
-	bool is_subsumed;
+  BOOLEAN is_subsumed;
 
 } Clause;
 
@@ -73,10 +73,10 @@ typedef struct {
 typedef struct {
 
   Clause * delta;
-	Clause * gamma;
-	Literal * decisions;
-	Literal * implications;
-	Clause alpha;
+  Clause * gamma;
+  Lit * decisions;
+  Lit * implications;
+  Clause alpha;
 
 
 } SatState;
