@@ -56,7 +56,7 @@ Lit* neg_literal(Var* var) {
 	l = (Lit*)malloc(sizeof(Lit));
 	// if index was 1000 now i want the neg literal then it is -1000 which is 1000 - 2(1000)
 	l->sindex = var->index - (2*var->index);
-   // l.isNegative = 't';
+  // l.isNegative = 't';
 	return l;
 }
 
@@ -101,9 +101,8 @@ BOOLEAN subsumed_clause(Clause* clause) {
 //		if((*clause_set_lit)[i]->LitState == 't')
 //			return 1;
 //	}
-
  
-  return 0; // dummy value
+  return clause->is_subsumed;
 }
 
 
@@ -130,11 +129,11 @@ SatState* construct_sat_state(char* cnf_fname) {
 
   // ... TO DO ..
 
-  SatState* sat_state = (SatState*)malloc (sizeof (SatState));
-  sat_state->decisions = (Lit*)malloc(sizeof (Lit));
-  sat_state->delta = (Clause*)malloc(sizeof(Clause));
-  sat_state->gamma = (Clause*)malloc(sizeof(Clause));
-  sat_state->implications = (Lit*)malloc(sizeof(Lit));
+  SatState* sat_state = (SatState *) malloc (sizeof (SatState));
+  sat_state->decisions = (Lit *) malloc(sizeof (Lit));
+  sat_state->delta = (Clause *) malloc(sizeof(Clause));
+  sat_state->gamma = (Clause *) malloc(sizeof(Clause));
+  sat_state->implications = (Lit *) malloc(sizeof(Lit));
 
 
   FILE* cnf_file = fopen(cnf_fname, "r");
