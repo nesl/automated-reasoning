@@ -126,7 +126,6 @@ BOOLEAN subsumed_clause(Clause* clause) {
  * SatState (free_sat_state)
  ******************************************************************************/
 SatState* construct_sat_state(char* cnf_fname) {
-
   // ... TO DO ..
 
   SatState* sat_state = (SatState *) malloc (sizeof (SatState));

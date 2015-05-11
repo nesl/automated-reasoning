@@ -5,9 +5,10 @@
  *      Author: salma
  */
 
+#define _GNU_SOURCE
 #include "ParseDIMACS.h"
 #include <string.h>
-
+#include <stdio.h>
 
 /**Helper functions */
 /* **************************************************************************** */
@@ -78,7 +79,7 @@ static void DebugCNF(unsigned long m, unsigned long n, long cnf[m][n]){
 
 void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 
-	char* line = NULL;
+	char * line = NULL;
 	size_t len = 0;
 	ssize_t read;
 
@@ -100,11 +101,13 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 #ifdef DEBUG
 			printf("number of clauses: %ld, number of variables: %ld\n", m,n);
 #endif
-		}
+	}
 		else
 		{
 			// read the CNF
 			unsigned long vars = parseClause(line,n, m, cnf[clausecounter++]);
+			vars = vars - 1; //FIXME put this here to quiet the compiler... remove later
+			vars = vars + 1; //FIXME put this here to quiet the compiler... remove later
 #ifdef DEBUG
 			printf("access clause %ld and element 2 is %ld, number of var is this clause is %ld\n",clausecounter,cnf[clausecounter][2],vars);
 #endif
