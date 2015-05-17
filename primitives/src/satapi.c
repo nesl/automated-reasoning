@@ -62,10 +62,8 @@ Lit* neg_literal(Var* var) {
 
 BOOLEAN set_literal(Lit* lit) {
 
-  // ... TO DO ..
-	//lit->LitState
-	//return lit->LitState; // dummy value
-	return 0;
+	return lit->LitState;
+
 }
 
 /******************************************************************************
@@ -126,19 +124,24 @@ BOOLEAN subsumed_clause(Clause* clause) {
  * SatState (free_sat_state)
  ******************************************************************************/
 SatState* construct_sat_state(char* cnf_fname) {
-  // ... TO DO ..
 
+	//initialization
   SatState* sat_state = (SatState *) malloc (sizeof (SatState));
   sat_state->decisions = (Lit *) malloc(sizeof (Lit));
   sat_state->delta = (Clause *) malloc(sizeof(Clause));
   sat_state->gamma = (Clause *) malloc(sizeof(Clause));
   sat_state->implications = (Lit *) malloc(sizeof(Lit));
+  sat_state->current_decision_level = 0;
+  sat_state->num_clauses_in_delta = 0;
+  sat_state->num_clauses_in_gamma = 0;
+  sat_state->num_literals_in_decision = 0;
+  sat_state->num_literals_in_implications = 0;
+  sat_state->num_variables_in_state = 0;
 
 
   FILE* cnf_file = fopen(cnf_fname, "r");
   
   if (cnf_file == 0){
-	  // fopen returns 0, the NULL pointer, on failure
 	  perror("Cannot open the CNF file");
 	  exit(-1);
   }
@@ -154,7 +157,6 @@ SatState* construct_sat_state(char* cnf_fname) {
 
 void free_sat_state(SatState* sat_state) {
 
-  // ... TO DO ..
  //	free(sat_state->alpha);
 	free(sat_state->decisions);
 	free(sat_state->delta);
@@ -225,9 +227,19 @@ void undo_unit_resolution(SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 
-  // ... TO DO ..
+	//update the literal parameters
+	lit->LitState = 1;
+	lit->decision_level = sat_state->current_decision_level + 1;
 
-  return 0; // dummy value
+	// here update the decision array of the sat_state
+    sat_state->decisions[sat_state->num_literals_in_decision++] = lit;
+	// update decision level
+	sat_state->current_decision_level++ ;
+
+
+
+
+  return unit_resolution(sat_state); // dummy value
 }
 
 
@@ -240,9 +252,27 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
  ******************************************************************************/
 void undo_decide_literal(SatState* sat_state) {
 
-  // ... TO DO ..
+	unsigned long num_reduced_decisions = 0;
+	//TODO: undo the set literals at the current decision level
+	for(unsigned long i = sat_state->num_literals_in_decision; i > 0; i--){
+		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level){
+			sat_state->decisions[i]->decision_level = 0;
+			sat_state->decisions[i]->LitState = 0;
+			num_reduced_decisions ++;
+		}
+		//TODO (Performance enhancing):
+		// we are incrementing the decision level one by one so once the decision level
+		// of the literal is less than the current one then you can break. You don't have to
+		// continue the loop
+		if(sat_state->decisions[i]->decision_level < sat_state->current_decision_level){
+			break;
+		}
 
-  return; // dummy value
+	}
+	//update the current decision level
+	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions;
+	sat_state->current_decision_level -- ;
+
 }
 
 
