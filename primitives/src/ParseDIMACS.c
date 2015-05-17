@@ -58,7 +58,7 @@ static unsigned long parseClause(char* line, Clause* clause){
 			printf("%s\n", pch);
 #endif
 
-			literals[countvariables++]->sindex = atol(pch);
+			literals[countvariables++].sindex = atol(pch);
 
 		pch = strtok (NULL, " ");
 	}
@@ -108,7 +108,7 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 		{
 			// read the CNF
 			//unsigned long vars = parseClause(line,n, m, cnf[clausecounter++]);
-			unsigned long vars = parseClause(line,sat_state->delta[clausecounter++]);
+			unsigned long vars = parseClause(line, &sat_state->delta[clausecounter++]);
 #ifdef DEBUG
 			//printf("access clause %ld and element 2 is %ld, number of var is this clause is %ld\n",clausecounter,cnf[clausecounter][2],vars);
 #endif

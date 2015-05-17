@@ -131,7 +131,7 @@ SatState* construct_sat_state(char* cnf_fname) {
   sat_state->delta = (Clause *) malloc(sizeof(Clause));
   sat_state->gamma = (Clause *) malloc(sizeof(Clause));
   sat_state->implications = (Lit *) malloc(sizeof(Lit));
-  sat_state->current_decision_level = 0;
+  sat_state->current_decision_level = 1; // this is by description
   sat_state->num_clauses_in_delta = 0;
   sat_state->num_clauses_in_gamma = 0;
   sat_state->num_literals_in_decision = 0;
@@ -232,7 +232,7 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 	lit->decision_level = sat_state->current_decision_level + 1;
 
 	// here update the decision array of the sat_state
-    sat_state->decisions[sat_state->num_literals_in_decision++] = lit;
+    sat_state->decisions[sat_state->num_literals_in_decision++] = *lit;
 	// update decision level
 	sat_state->current_decision_level++ ;
 
@@ -254,17 +254,17 @@ void undo_decide_literal(SatState* sat_state) {
 
 	unsigned long num_reduced_decisions = 0;
 	//TODO: undo the set literals at the current decision level
-	for(unsigned long i = sat_state->num_literals_in_decision; i > 0; i--){
-		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level){
-			sat_state->decisions[i]->decision_level = 0;
-			sat_state->decisions[i]->LitState = 0;
+	for(unsigned long i = sat_state->num_literals_in_decision; i >= 1; i--){
+		if(sat_state->decisions[i].decision_level == sat_state->current_decision_level){
+			sat_state->decisions[i].decision_level = 0;
+			sat_state->decisions[i].LitState = 0;
 			num_reduced_decisions ++;
 		}
 		//TODO (Performance enhancing):
 		// we are incrementing the decision level one by one so once the decision level
 		// of the literal is less than the current one then you can break. You don't have to
 		// continue the loop
-		if(sat_state->decisions[i]->decision_level < sat_state->current_decision_level){
+		if(sat_state->decisions[i].decision_level < sat_state->current_decision_level){
 			break;
 		}
 
@@ -327,9 +327,10 @@ BOOLEAN at_assertion_level(SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN at_start_level(SatState* sat_state) {
 
-  // ... TO DO ..
-
-  return 0; // dummy value
+	if(sat_state->current_decision_level == 1)
+		return 1;
+	else
+		return 0;
 }
 
 
