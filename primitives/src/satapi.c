@@ -89,16 +89,13 @@ Clause* index2clausep(unsigned long i, SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN subsumed_clause(Clause* clause) {
 
-  // ... TO DO ..
 	// if any of its literals have the LitState =1
-	// This is buggy ... you need to check the limits of the for loop and the number of literals and make sure they work right together
-
-	//Lit* clause_set_lit = clause->setLit;
-//
-//	for (unsigned int i = 0; i<= clause->NumLit; i++){
-//		if((*clause_set_lit)[i]->LitState == 't')
-//			return 1;
-//	}
+	for (unsigned long int i = 0; i<= clause->num_literals_in_clause; i++){
+		if(clause->literals[i].LitState == 1){
+			clause->is_subsumed = 1;
+			break;
+		}
+	}
  
   return clause->is_subsumed;
 }
@@ -236,10 +233,7 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 	// update decision level
 	sat_state->current_decision_level++ ;
 
-
-
-
-  return unit_resolution(sat_state); // dummy value
+  return unit_resolution(sat_state);
 }
 
 
@@ -253,7 +247,7 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 void undo_decide_literal(SatState* sat_state) {
 
 	unsigned long num_reduced_decisions = 0;
-	//TODO: undo the set literals at the current decision level
+	// undo the set literals at the current decision level
 	for(unsigned long i = sat_state->num_literals_in_decision; i >= 1; i--){
 		if(sat_state->decisions[i].decision_level == sat_state->current_decision_level){
 			sat_state->decisions[i].decision_level = 0;

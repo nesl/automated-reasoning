@@ -68,6 +68,8 @@ static unsigned long parseClause(char* line, Clause* clause){
 
 	clause->literals = literals;
 	clause->num_literals_in_clause = countvariables-1;
+	clause->is_subsumed = 0;
+
 	return countvariables-1; // the clause ends with 0 as a termination so we subtract this element to return teh correct value
 }
 /* **************************************************************************** */
@@ -130,8 +132,6 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 
 	if(line)
 		free(line);
-
-	//return 1; //dummy value
 }
 
 
