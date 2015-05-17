@@ -102,8 +102,11 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 		if((line)[0] == 'p'){
 			//parseProblemLine(line, &n, &m);
 			parseProblemLine(line, sat_state->num_variables_in_state, sat_state->num_clauses_in_delta);
+			sat_state->variables =( (Var*) malloc(sizeof(Var)*sat_state->num_variables_in_state) );
+			sat_state->delta = (Clause *) malloc(sizeof(Clause) * sat_state->num_clauses_in_delta );
+
 #ifdef DEBUG
-			printf("number of clauses: %ld, number of variables: %ld\n", m,n);
+			printf("number of clauses: %ld, number of variables: %ld\n", sat_state->num_clauses_in_delta, sat_state->num_variables_in_state);
 #endif
 	}
 		else

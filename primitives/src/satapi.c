@@ -125,9 +125,12 @@ SatState* construct_sat_state(char* cnf_fname) {
 	//initialization
   SatState* sat_state = (SatState *) malloc (sizeof (SatState));
   sat_state->decisions = (Lit *) malloc(sizeof (Lit));
-  sat_state->delta = (Clause *) malloc(sizeof(Clause));
   sat_state->gamma = (Clause *) malloc(sizeof(Clause));
   sat_state->implications = (Lit *) malloc(sizeof(Lit));
+
+//   sat_state->delta = (Clause *) malloc(sizeof(Clause)); //initialized in the parser
+// 	 sat_state->variables = (Var*) malloc(sizeof(Var)); //initialized later in the parser
+
   sat_state->current_decision_level = 1; // this is by description
   sat_state->num_clauses_in_delta = 0;
   sat_state->num_clauses_in_gamma = 0;
