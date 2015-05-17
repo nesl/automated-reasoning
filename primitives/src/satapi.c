@@ -200,6 +200,28 @@ void free_sat_state(SatState* sat_state) {
 BOOLEAN unit_resolution(SatState* sat_state) {
 
   // ... TO DO ..
+
+
+  // if all clauses are subsumed then return true;
+  unsigned long num_subsumed_clauses = 0;
+  for (unsigned long i =0; i <= sat_state->num_clauses_in_delta; i++){
+	  if(subsumed_clause(&sat_state->delta[i])){
+		  num_subsumed_clauses ++;
+		  continue;
+	  }
+	  else
+		  break;
+  }
+  if(num_subsumed_clauses == sat_state->num_clauses_in_delta){
+	  //all clauses are subsumed
+	  return 1;
+  }
+  else{
+	  // not all clauses are subsumed
+	  // take a new decision
+	  // is there a conflict?
+  }
+
  
   return 0; // dummy value
 }
@@ -211,7 +233,27 @@ BOOLEAN unit_resolution(SatState* sat_state) {
  ******************************************************************************/
 void undo_unit_resolution(SatState* sat_state) {
 
-  // ... TO DO ..
+	unsigned long num_reduced_decisions = 0;
+	// undo the set literals at the current decision level
+	for(unsigned long i = sat_state->num_literals_in_decision; i >= 1; i--){
+		if(sat_state->decisions[i].decision_level == sat_state->current_decision_level){
+			sat_state->decisions[i].decision_level = 0;
+			sat_state->decisions[i].LitState = 0;
+			num_reduced_decisions ++;
+		}
+		//TODO (Performance enhancing):
+		// we are incrementing the decision level one by one so once the decision level
+		// of the literal is less than the current one then you can break. You don't have to
+		// continue the loop
+		if(sat_state->decisions[i].decision_level < sat_state->current_decision_level){
+			break;
+		}
+
+	}
+	//update the current decision level
+	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions;
+	sat_state->current_decision_level -- ;
+
 
   return; // dummy value
 }
@@ -248,28 +290,7 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
  * should be updated to L-1 before the call ends
  ******************************************************************************/
 void undo_decide_literal(SatState* sat_state) {
-
-	unsigned long num_reduced_decisions = 0;
-	// undo the set literals at the current decision level
-	for(unsigned long i = sat_state->num_literals_in_decision; i >= 1; i--){
-		if(sat_state->decisions[i].decision_level == sat_state->current_decision_level){
-			sat_state->decisions[i].decision_level = 0;
-			sat_state->decisions[i].LitState = 0;
-			num_reduced_decisions ++;
-		}
-		//TODO (Performance enhancing):
-		// we are incrementing the decision level one by one so once the decision level
-		// of the literal is less than the current one then you can break. You don't have to
-		// continue the loop
-		if(sat_state->decisions[i].decision_level < sat_state->current_decision_level){
-			break;
-		}
-
-	}
-	//update the current decision level
-	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions;
-	sat_state->current_decision_level -- ;
-
+	undo_unit_resolution(sat_state);
 }
 
 

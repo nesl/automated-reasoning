@@ -80,7 +80,7 @@ typedef struct {
   Lit* implications;
   Clause alpha;
 
-  Var* variables; // not sure yet why needed but it is mentioned in the description
+  Var* variables; // not sure yet why needed but it is mentioned in the description so just keep it for now
 
   unsigned long  num_clauses_in_delta;
   unsigned long  num_clauses_in_gamma;
