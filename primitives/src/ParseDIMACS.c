@@ -65,7 +65,7 @@ static unsigned long parseClause(char* line, unsigned long n, unsigned long m, l
 	if(pch)
 	 free(pch);
 
-	return countvariables-1; // the clause ends with 0 as a termination so we subtract this element to return teh correct value
+	return countvariables-1; // the clause ends with 0 as a termination so we subtract this element to return the correct value
 }
 /* **************************************************************************** */
 
