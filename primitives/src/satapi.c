@@ -1,5 +1,6 @@
 #include "satapi.h"
 #include <fcntl.h>
+#include <assert.h>
 #include "ParseDIMACS.h"
 
 /******************************************************************************
@@ -62,6 +63,34 @@ Lit* neg_literal(Var* var) {
 
 BOOLEAN set_literal(Lit* lit) {
 
+	//TODO: Check the sanity of this
+	if ( lit->sindex < 0 ) //negative literal
+	 switch(lit->LitValue){
+	 case 0:
+		 lit->LitState = 1; // asserted --> ie negative literal and has value false then it will be evaluated to true
+		 break;
+	 case 1:
+		 lit->LitState = 1 ;// resolved --> ie negative literal and has value true then it will be evaluated to false
+		 break;
+	 case 'd':
+		 lit->LitState = 0; // free --> neither asserted nor resolved
+		 break;
+	 }
+
+	else if(lit->sindex > 0)// positive literal
+	 switch(lit->LitValue){
+	 case 1:
+		 lit->LitState = 1; // asserted --> ie positive literal and has value true then it will be evaluated to true
+		 break;
+	 case 0:
+		 lit->LitState = 1 ;// resolved --> ie positive literal and has value false then it will be evaluated to false
+		 break;
+	 case 'd':
+		 lit->LitState = 0; // free --> neither asserted nor resolved
+		 break;
+	 }
+
+
 	return lit->LitState;
 
 }
@@ -74,7 +103,9 @@ BOOLEAN set_literal(Lit* lit) {
  ******************************************************************************/
 Clause* index2clausep(unsigned long i, SatState* sat_state) {
 
-  return ((sat_state->delta)+i);
+	assert(i <= sat_state->num_clauses_in_delta);
+
+	return ((sat_state->delta)+i - 1 ); // -1 because we start filling the array from point 0 but indices are from 1 to m
 
 }
  
@@ -199,7 +230,19 @@ void free_sat_state(SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN unit_resolution(SatState* sat_state) {
 
-  // ... TO DO ..
+	//TODO: We may need to do variable order to enhance the performance. But for now just choose the first two literals in the clause to watch
+  // Algorithm
+  // Step 1: I <- literals implied by unit resolution from Delta and Gamma and Decision
+
+  // Step 2: If there is a contradiction then alpha <- an asserting clause for Delta, Gamma and Decision
+	// return false;
+
+  // return true;
+
+
+
+
+
 
 
   // if all clauses are subsumed then return true;
@@ -270,7 +313,14 @@ void undo_unit_resolution(SatState* sat_state) {
 BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 
 	//update the literal parameters
+	//Set lit values
+	if(lit->sindex < 0)
+		lit->LitValue = 0;
+	else if (lit->sindex > 0);
+		lit->LitValue = 1;
+
 	lit->LitState = 1;
+
 	lit->decision_level = sat_state->current_decision_level + 1;
 
 	// here update the decision array of the sat_state
@@ -319,7 +369,7 @@ BOOLEAN add_asserting_clause(SatState* sat_state) {
 
   // ... TO DO ..
 
-  return 0; // dummy value
+	return unit_resolution(sat_state);
 }
 
 

@@ -12,6 +12,15 @@
 
 /**Helper functions */
 /* **************************************************************************** */
+
+
+
+/******************************************************************************
+ * Parse Problem line
+ * -- Get the definition of the problem by getting the number of clauses and
+ * -- number of variables
+ * -- initialize space in the memory for their sizes
+ ******************************************************************************/
 static int parseProblemLine(char* line, SatState* sat_state){
 	char* pch = NULL;
 	int countparameters = 0;
@@ -25,11 +34,14 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		// skip the p cnf park of the line
 		if ( !strstr(pch, "p")  &&  !strstr(pch, "cnf") ) {
 			printf("%s\n", pch);
-			if(countparameters == 0 )
+			if(countparameters == 0 ){
 				sat_state->num_variables_in_state = atoi(pch);
-			else
+				sat_state->variables =( (Var*) malloc(sizeof(Var) * sat_state->num_variables_in_state) );
+			}
+			else{
 				sat_state->num_clauses_in_delta = atoi(pch);
-
+				sat_state->delta =( (Clause *) malloc(sizeof(Clause) * sat_state->num_clauses_in_delta) );
+			}
 			countparameters++;
 		}
 
@@ -43,6 +55,12 @@ static int parseProblemLine(char* line, SatState* sat_state){
 	return 1;
 }
 
+
+/******************************************************************************
+ * Parse Clause line
+ * -- For each line in the DIMACS file construct a new clause struct
+ * -- initialize the array of literals this clause contains
+ ******************************************************************************/
 static unsigned long parseClause(char* line, Clause* clause){
 	char* pch = NULL;
 	unsigned long countvariables = 0;
@@ -59,10 +77,13 @@ static unsigned long parseClause(char* line, Clause* clause){
 #endif
 
 			literals[countvariables].sindex = atol(pch);
-			literals[countvariables].LitState = 0;
+			literals[countvariables].LitState = 0; // free literal
 			literals[countvariables].decision_level = 1;
+			literals[countvariables].list_of_clauses =  (unsigned long *) malloc (sizeof(unsigned long) );
+			literals[countvariables].LitValue = 'd'; // initialize to free literal
 
 			countvariables ++;
+
 		pch = strtok (NULL, " ");
 	}
 
@@ -74,7 +95,12 @@ static unsigned long parseClause(char* line, Clause* clause){
 	clause->num_literals_in_clause = countvariables-1;
 	clause->is_subsumed = 0;
 
-	return countvariables-1; // the clause ends with 0 as a termination so we subtract this element to return teh correct value
+	// For the two literal watch // just initialize here
+	clause->u=(Lit *) malloc(sizeof (Lit));;
+	clause->v=(Lit *) malloc(sizeof (Lit));;
+
+
+	return countvariables-1; // the clause ends with 0 as a termination so we subtract this element to return the correct value
 
 }
 /* **************************************************************************** */
@@ -87,6 +113,14 @@ static unsigned long parseClause(char* line, Clause* clause){
 //}
 #endif
 
+
+
+
+
+/******************************************************************************
+ * Parse the DIMACS file that contains the CNF
+ * -- fill in the sat_state data structure with initialized spaces in memory
+ ******************************************************************************/
 void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 
 	char * line = NULL;
@@ -102,9 +136,6 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 		// parse the line that starts with p (problem line  p cnf <number of variables n> <number of clauses m>)
 		if((line)[0] == 'p'){
 			parseProblemLine(line, sat_state);
-			sat_state->variables =( (Var*) malloc(sizeof(Var) * sat_state->num_variables_in_state) );
-			sat_state->delta = (Clause *) malloc(sizeof(Clause) * sat_state->num_clauses_in_delta );
-
 #ifdef DEBUG
 			printf("number of clauses: %ld, number of variables: %ld\n", sat_state->num_clauses_in_delta, sat_state->num_variables_in_state);
 #endif
@@ -114,6 +145,8 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 			// read the CNF
 			unsigned long vars = parseClause(line, &sat_state->delta[clausecounter++]);
 			//TODO: Add the variables in the clause to sat_state->variables.
+			printf("Number of variables: %ld", vars);
+
 #ifdef DEBUG
 			//printf("access clause %ld and element 2 is %ld, number of var is this clause is %ld\n",clausecounter,cnf[clausecounter][2],vars);
 #endif

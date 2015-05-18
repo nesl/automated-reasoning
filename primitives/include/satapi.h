@@ -7,12 +7,11 @@
 
 
 
-
 /******************************************************************************
  * typedefs
  ******************************************************************************/
 
-typedef char BOOLEAN;
+typedef char BOOLEAN; //1 is true; 0 is false; d is don't care or free
 
 
 /******************************************************************************
@@ -44,8 +43,16 @@ typedef struct {
 typedef struct {
 
 	signed long sindex;
-	BOOLEAN LitState;
-	unsigned long decision_level;
+	BOOLEAN LitState;			  // whether it is set or not
+
+	unsigned long decision_level; // if it is decided or implied what is the level of the literal in this setting
+
+	BOOLEAN LitValue;			// whether it has value true, false, or free(not set)
+
+	/** for the two literal watch data structure */
+	unsigned long* list_of_clauses;  // List of clause indices that contain this literal as a watched literal
+
+
 } Lit;
 
 
@@ -62,6 +69,11 @@ typedef struct {
   Lit * literals;
   unsigned long num_literals_in_clause;
   BOOLEAN is_subsumed;
+
+
+  /** for the two literal watch data structure */
+  Lit* u; //first literal index
+  Lit* v; //second literal index
 
 } Clause;
 
@@ -82,11 +94,11 @@ typedef struct {
 
   Var* variables; // not sure yet why needed but it is mentioned in the description so just keep it for now
 
-  unsigned long  num_clauses_in_delta;
+  unsigned long  num_clauses_in_delta;  // m
   unsigned long  num_clauses_in_gamma;
   unsigned long  num_literals_in_decision;
   unsigned long  num_literals_in_implications;
-  unsigned long  num_variables_in_state;
+  unsigned long  num_variables_in_state; //n
 
   unsigned long current_decision_level;
 
