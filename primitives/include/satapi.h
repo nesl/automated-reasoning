@@ -44,7 +44,8 @@ typedef struct {
 typedef struct {
 
 	signed long sindex;
-
+	BOOLEAN LitState;
+	unsigned long decision_level;
 } Lit;
 
 
@@ -59,6 +60,7 @@ typedef struct {
 typedef struct {
 
   Lit * literals;
+  unsigned long num_literals_in_clause;
   BOOLEAN is_subsumed;
 
 } Clause;
@@ -72,12 +74,21 @@ typedef struct {
 
 typedef struct {
 
-  Clause * delta;
-  Clause * gamma;
-  Lit * decisions;
-  Lit * implications;
+  Clause* delta;
+  Clause* gamma;
+  Lit* decisions;
+  Lit* implications;
   Clause alpha;
 
+  Var* variables; // not sure yet why needed but it is mentioned in the description so just keep it for now
+
+  unsigned long  num_clauses_in_delta;
+  unsigned long  num_clauses_in_gamma;
+  unsigned long  num_literals_in_decision;
+  unsigned long  num_literals_in_implications;
+  unsigned long  num_variables_in_state;
+
+  unsigned long current_decision_level;
 
 } SatState;
 
