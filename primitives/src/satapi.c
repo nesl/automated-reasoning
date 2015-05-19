@@ -155,9 +155,11 @@ SatState* construct_sat_state(char* cnf_fname) {
 
 	//initialization
   SatState* sat_state = (SatState *) malloc (sizeof (SatState));
-  sat_state->decisions = (Lit *) malloc(sizeof (Lit));
+
+  sat_state->decisions = (Lit **) malloc(sizeof (Lit*));
   sat_state->gamma = (Clause *) malloc(sizeof(Clause));
-  sat_state->implications = (Lit *) malloc(sizeof(Lit));
+
+//  sat_state->implications = (Lit *) malloc(sizeof(Lit)); // initialized in the parser
 
 //   sat_state->delta = (Clause *) malloc(sizeof(Clause)); //initialized in the parser
 // 	 sat_state->variables = (Var*) malloc(sizeof(Var)); //initialized later in the parser
@@ -187,12 +189,50 @@ SatState* construct_sat_state(char* cnf_fname) {
 }
 
 void free_sat_state(SatState* sat_state) {
-
- //	free(sat_state->alpha);
-	free(sat_state->decisions);
-	free(sat_state->delta);
-	free(sat_state->gamma);
+//deep cleaning of variables and implications
+	for(unsigned long i = 0; i<sat_state->num_variables_in_state; i++){
+		free(sat_state->variables[i].negLit->list_of_watched_clauses);
+		free(sat_state->variables[i].posLit->list_of_watched_clauses);
+		free(sat_state->implications[i]->list_of_watched_clauses);
+	}
+	free(sat_state->variables);
 	free(sat_state->implications);
+
+
+//deep cleaning of decisions
+	for(unsigned long i = 0; i<sat_state->num_literals_in_decision; i++){
+		free(sat_state->decisions[i]->list_of_watched_clauses);
+	}
+	free(sat_state->decisions);
+
+
+//deep cleaning of delta
+	for(unsigned long i =0; i<sat_state->num_clauses_in_delta; i++){
+		free(sat_state->delta[i].u->list_of_watched_clauses);
+		free(sat_state->delta[i].v->list_of_watched_clauses);
+		free(sat_state->delta[i].u);
+		free(sat_state->delta[i].v);
+		for(unsigned long j=0; j<sat_state->delta[i].num_literals_in_clause; j++){
+			free(sat_state->delta[i].literals[j]->list_of_watched_clauses);
+			free(sat_state->delta[i].literals[j]);
+		}
+	}
+	free(sat_state->delta);
+
+
+//deep cleaning of gamma
+	for(unsigned long i =0; i<sat_state->num_clauses_in_gamma; i++){
+		free(sat_state->gamma[i].u->list_of_watched_clauses);
+		free(sat_state->gamma[i].v->list_of_watched_clauses);
+		free(sat_state->gamma[i].u);
+		free(sat_state->delta[i].v);
+		for(unsigned long j=0; j<sat_state->gamma[i].num_literals_in_clause; j++){
+			free(sat_state->gamma[i].literals[j]->list_of_watched_clauses);
+			free(sat_state->gamma[i].literals[j]);
+		}
+	}
+	free(sat_state->gamma);
+
 	free(sat_state);
  
   return; // dummy value
@@ -277,16 +317,16 @@ void undo_unit_resolution(SatState* sat_state) {
 	unsigned long num_reduced_decisions = 0;
 	// undo the set literals at the current decision level
 	for(unsigned long i = sat_state->num_literals_in_decision; i >= 1; i--){
-		if(sat_state->decisions[i].decision_level == sat_state->current_decision_level){
-			sat_state->decisions[i].decision_level = 0;
-			sat_state->decisions[i].LitState = 0;
+		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level){
+			sat_state->decisions[i]->decision_level = 0;
+			sat_state->decisions[i]->LitState = 0;
 			num_reduced_decisions ++;
 		}
 		//TODO (Performance enhancing):
 		// we are incrementing the decision level one by one so once the decision level
 		// of the literal is less than the current one then you can break. You don't have to
 		// continue the loop
-		if(sat_state->decisions[i].decision_level < sat_state->current_decision_level){
+		if(sat_state->decisions[i]->decision_level < sat_state->current_decision_level){
 			break;
 		}
 
@@ -322,7 +362,7 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 	lit->decision_level = sat_state->current_decision_level + 1;
 
 	// here update the decision array of the sat_state
-    sat_state->decisions[sat_state->num_literals_in_decision++] = *lit;
+    sat_state->decisions[sat_state->num_literals_in_decision++] = lit;
 	// update decision level
 	sat_state->current_decision_level++ ;
 

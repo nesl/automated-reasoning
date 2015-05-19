@@ -11,11 +11,8 @@
 #include <stdio.h>
 
 
-#define END_OF_CLAUSE_LINE 0
-
-/**Helper functions */
-/* **************************************************************************** */
-
+#define END_OF_CLAUSE_LINE 		0
+#define MALLOC_GROWTH_RATE 	   	2
 
 
 /******************************************************************************
@@ -39,11 +36,9 @@ static int parseProblemLine(char* line, SatState* sat_state){
 			printf("%s\n", pch);
 			if(countparameters == 0 ){
 				sat_state->num_variables_in_state = atoi(pch);
-				//allocate memory for n of variables;
+				//allocate memory for n of variables and at the end the number of implications will equal to the number of variables;
 				sat_state->variables =( (Var*) malloc(sizeof(Var) * sat_state->num_variables_in_state) );
-				//allocate memory for 2n literals
-				sat_state->positiveLiterals = ( (Lit*) malloc(sizeof(Lit) * sat_state->num_variables_in_state) );
-				sat_state->negativeLiterals = ( (Lit*) malloc(sizeof(Lit) * sat_state->num_variables_in_state) );
+				sat_state->implications =( (Lit **) malloc(sizeof(Lit*) * sat_state->num_variables_in_state) );
 			}
 			else{
 				sat_state->num_clauses_in_delta = atoi(pch);
@@ -56,32 +51,31 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		pch = strtok (NULL, " ");
 	}
 
-	if(pch)
-	 free(pch);
+//	if(pch)
+//	 free(pch);
 
 
-	// initialize the variables and literals;
+	// initialize the n variables and 2n literals;
 	for(unsigned long i = 0; i < sat_state->num_variables_in_state; i++ ){
+		printf("in loop i = %ld\n", i);
 
-		sat_state->positiveLiterals[i].sindex = i+1; 			// positive literals start with 1 to n;
-		sat_state->negativeLiterals[i].sindex = i+1 - (2*(i+1));// negative literals start with -1 to -n;
-
-		sat_state->positiveLiterals[i].LitState = 0; // free literal
-		sat_state->positiveLiterals[i].decision_level = 1;
-		sat_state->positiveLiterals[i].list_of_watched_clauses =  (unsigned long *) malloc (sizeof(unsigned long) );
-		sat_state->positiveLiterals[i].LitValue = 'd'; // initialize to free literal
-
-		sat_state->negativeLiterals[i].LitState = 0; // free literal
-		sat_state->negativeLiterals[i].decision_level = 1;
-		sat_state->negativeLiterals[i].list_of_watched_clauses =  (unsigned long *) malloc (sizeof(unsigned long) );
-		sat_state->negativeLiterals[i].LitValue = 'd'; // initialize to free literal
+		sat_state->variables[i].index = i+1; 								// variables start with index 1 to n ;
+		sat_state->variables[i].negLit = (Lit*) malloc(sizeof(Lit) );
+		sat_state->variables[i].negLit->sindex = i+1 - (2*(i+1));			// negative literals start with -1 to -n;
+		sat_state->variables[i].negLit->LitState = 0; 						// free literal
+		sat_state->variables[i].negLit->decision_level = 1;
+		sat_state->variables[i].negLit->LitValue = 'd'; 					// initialize to free literal
+		sat_state->variables[i].negLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
 
 
-		sat_state->variables[i].index = i+1; 					// variables start with index 1 to n ;
-		sat_state->variables[i].posLit = &sat_state->positiveLiterals[i];
-		sat_state->variables[i].negLit = &sat_state->negativeLiterals[i];
+		sat_state->variables[i].posLit = (Lit*) malloc(sizeof(Lit) );
+		sat_state->variables[i].posLit = (Lit*) malloc(sizeof(Lit) );
+		sat_state->variables[i].posLit->sindex = i+1;						// negative literals start with -1 to -n;
+		sat_state->variables[i].posLit->LitState = 0; 						// free literal
+		sat_state->variables[i].posLit->decision_level = 1;
+		sat_state->variables[i].posLit->LitValue = 'd'; 					// initialize to free literal
+		sat_state->variables[i].posLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
 	}
-
 
 	return 1;
 }
@@ -99,6 +93,13 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 #ifdef DEBUG
 	printf("%s\n",line);
 #endif
+
+	// initialize memory of clause literals with one element and then increase the size by double if needed
+	int MIN_CAPACITY = 1;
+
+	clause->literals = (Lit**) malloc(sizeof(Lit*) * MIN_CAPACITY);
+
+
 	//separate the string into space separated tokens
 	pch = strtok(line, " ");
 
@@ -106,21 +107,18 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 #ifdef DEBUG
 			printf("%s\n", pch);
 #endif
-//TODO: enhance by checking if atol(pch) == 0 then this is the end of the clause line and no need to allocate memory for this
 			if(atol(pch) == END_OF_CLAUSE_LINE){
 				break;
 			}
 
-//			// This is wrong --> this means that for the same literal it will be different struct because it is in different clause!!
-//			literals[countvariables].sindex = atol(pch);
-//			literals[countvariables].LitState = 0; // free literal
-//			literals[countvariables].decision_level = 1;
-//			literals[countvariables].list_of_watched_clauses =  (unsigned long *) malloc (sizeof(unsigned long) );
-//			literals[countvariables].LitValue = 'd'; // initialize to free literal
-
+			if(countvariables >= MIN_CAPACITY){
+				// needs to realloc the size
+				MIN_CAPACITY = countvariables * MALLOC_GROWTH_RATE;
+				clause->literals = (Lit**) realloc( clause->literals, sizeof(Lit*) * MIN_CAPACITY);
+			}
 
 			signed long value = atol(pch);
-			 Var* var =  &sat_state->variables[abs(value) - 1]; // because array is filled from 0 to n-1
+			 Var* var =  &(sat_state->variables[abs(value) - 1]); // because array is filled from 0 to n-1
 			 if(value < 0)
 				 clause->literals[countvariables] = neg_literal(var);
 			 else if (value > 0)
@@ -131,34 +129,17 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 		pch = strtok (NULL, " ");
 	}
 
-	if(pch)
-	 free(pch);
 
-
-	//clause->literals = literals;
-	clause->num_literals_in_clause = countvariables -1 ;
+	clause->num_literals_in_clause = countvariables;
 	clause->is_subsumed = 0;
 
 	// For the two literal watch // just initialize here
-	//clause->u=(Lit *) malloc(sizeof (Lit));
-	//clause->v=(Lit *) malloc(sizeof (Lit));
 	clause->u =  clause->literals[0]; // first literal
 	clause->v =  clause->literals[1]; // second literal
 
-	return countvariables -1 ; // TODO: Check this: the clause ends with 0 as a termination so we subtract 1  to return the correct value
-
+	return countvariables;
 }
 /* **************************************************************************** */
-
-#ifdef DEBUG
-//static void DebugCNF(unsigned long m, unsigned long n, long cnf[m][n]){
-//
-//	printf("CNF Debugging for %ld clauses \n", m);
-//	printf("%ld",cnf[0][1]);
-//}
-#endif
-
-
 
 
 
@@ -189,30 +170,15 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 		{
 			// read the CNF
 			unsigned long vars = parseClause(sat_state, line, &sat_state->delta[clausecounter++]);
-			//TODO: Add the variables in the clause to sat_state->variables.
-			printf("Number of variables: %ld", vars);
-
 #ifdef DEBUG
-			//printf("access clause %ld and element 2 is %ld, number of var is this clause is %ld\n",clausecounter,cnf[clausecounter][2],vars);
+			printf("Number of variables: %ld\n", vars);
 #endif
+
 		}
 	}
 
-#ifdef DEBUG
-//	printf("Clause Counter %ld\n", clausecounter);
-//
-//	for(unsigned long c = 0; c < clausecounter; c++ ){
-//		printf("Debugging Clause number %ld\n", c );
-//		for(unsigned long v = 0; v < n; n++){
-//			printf("%ld\n",cnf[c][v]);
-//		}
-//	}
-	//DebugCNF(m,n, cnf);
-
-#endif
-
-	if(line)
-		free(line);
+//	if(line)
+//		free(line);
 
 }
 

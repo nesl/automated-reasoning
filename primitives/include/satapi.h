@@ -56,6 +56,7 @@ typedef struct {
 	Lit* posLit; // Keep track of the variable positive literal
 	Lit* negLit; // keep track of the variable negative literal
 } Var;
+
 /******************************************************************************
  * Clauses:
  * --You must represent clauses using the following struct
@@ -87,16 +88,13 @@ typedef struct {
 
   Clause* delta;
   Clause* gamma;
-  Lit* decisions;
-  Lit* implications;
+  Lit** decisions;
+  Lit** implications;
   Clause alpha;
 
   // Variables in the problem space and their positive and negative literals.
   // keep them here now because I don't know where else to allocate them
   Var* variables; //Array of variables
-  Lit* positiveLiterals; // Array of all positive literals
-  Lit* negativeLiterals; // Array of all negative literals
-
 
   unsigned long  num_clauses_in_delta;  // m
   unsigned long  num_clauses_in_gamma;
