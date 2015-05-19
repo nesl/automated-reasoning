@@ -63,7 +63,20 @@ void two_literal_watch(SatState* sat_state){
 		intitialize_watching_clauses(sat_state);
 
 
-	//
+	Clause* conflict_clause = NULL;
+
+	// I know here that the decision array is filled with at least one element
+	// get the last decision in the decision array and try to propagate from there
+
+	Lit* decided_literal = sat_state->decisions[sat_state->num_literals_in_decision -1];
+
+	//check if the decided literal is resolved literal
+	if((decided_literal->sindex <0 && decided_literal->LitValue == 1) || (decided_literal->sindex > 0 && decided_literal->LitValue == 0) ){
+		for(unsigned long i = 0; i < decided_literal->num_watched_clauses; i++){
+			Clause* wclause = index2clausep( decided_literal->list_of_watched_clauses[i], sat_state);
+		}
+	}
+
 
 
 
