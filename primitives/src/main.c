@@ -17,39 +17,37 @@
  * It returns some literal which is free in the current setting of sat_state  
  * If all literals are set, then it returns NULL
  ******************************************************************************/
-Lit* get_free_literal(SatState* sat_state) {
-
-  //this is the place for heuristic and variable order
-  //for now just pick the first free literal encountered
-
-  
-  return NULL; // dummy value
-}
-
-BOOLEAN sat_aux(SatState* sat_state) {
-  Lit* lit = get_free_literal(sat_state);
-  if(lit==NULL) return 1; // all literals are implied
-
-  BOOLEAN ret = 0;
-
-  if(decide_literal(lit,sat_state)) ret = sat_aux(sat_state);
-  undo_decide_literal(sat_state);
-
-  if(ret==0) { // there is a conflict
-    if(at_assertion_level(sat_state) && add_asserting_clause(sat_state)) 
-      return sat_aux(sat_state); // try again
-    else 
-      return 0; // backtrack (still conflict)
-  }
-  else return 1; // satisfiable
-}
-
-BOOLEAN sat(SatState* sat_state) {
-  BOOLEAN ret = 0;
-  if(unit_resolution(sat_state)) ret = sat_aux(sat_state);
-  undo_unit_resolution(sat_state); // everything goes back to the initial state
-  return ret;
-}
+//Lit* get_free_literal(SatState* sat_state) {
+//
+//  // ... TO DO ..
+//
+//  return NULL; // dummy value
+//}
+//
+//BOOLEAN sat_aux(SatState* sat_state) {
+//  Lit* lit = get_free_literal(sat_state);
+//  if(lit==NULL) return 1; // all literals are implied
+//
+//  BOOLEAN ret = 0;
+//
+//  if(decide_literal(lit,sat_state)) ret = sat_aux(sat_state);
+//  undo_decide_literal(sat_state);
+//
+//  if(ret==0) { // there is a conflict
+//    if(at_assertion_level(sat_state) && add_asserting_clause(sat_state))
+//      return sat_aux(sat_state); // try again
+//    else
+//      return 0; // backtrack (still conflict)
+//  }
+//  else return 1; // satisfiable
+//}
+//
+//BOOLEAN sat(SatState* sat_state) {
+//  BOOLEAN ret = 0;
+//  if(unit_resolution(sat_state)) ret = sat_aux(sat_state);
+//  undo_unit_resolution(sat_state); // everything goes back to the initial state
+//  return ret;
+//}
 
 
 char USAGE_MSG[] = "Usage: ./sat -in_cnf <cnf_file>\n";
@@ -66,11 +64,15 @@ int main(int argc, char* argv[]) {
 	
   // construct a sat state and then check satisfiability
   SatState* sat_state = construct_sat_state(cnf_fname);
-  if (sat_state != NULL) return 1;
+  if (sat_state != NULL)
+	  free_sat_state(sat_state);
+
 //  if(sat(sat_state)) printf("SAT\n");
 //  else printf("UNSAT\n");
 //  free_sat_state(sat_state);
-
+#ifdef DEBUG
+  printf("END OF SAT_STATE_CONSTRUCT");
+#endif
   return 0;
 }
 

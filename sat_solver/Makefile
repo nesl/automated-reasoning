@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c99 -O2 -Wall -finline-functions -Iinclude
+CFLAGS = -std=c99 -O2 -Wall -finline-functions -Iinclude -g
 LIBRARY_FLAGS = -Llib -lsat
 EXEC_FILE = sat 
 

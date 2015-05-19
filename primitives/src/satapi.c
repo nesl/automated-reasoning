@@ -262,13 +262,8 @@ void free_sat_state(SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN unit_resolution(SatState* sat_state) {
 
-	//TODO: We may need to do variable order to enhance the performance.
-
-  // Algorithm
-  // Step 1: I <- literals implied by unit resolution from Delta and Gamma and Decision
-  // Step 2: If there is a contradiction then alpha <- an asserting clause for Delta, Gamma and Decision
-	// return false;
-  // return true;
+//TODO: How to distinguish between the three cases!
+	//TODO: For now assume unit resolution is called from decide_literal so we are sure that decisions array is not empty
 
 
 	two_literal_watch(sat_state);
@@ -294,6 +289,7 @@ BOOLEAN unit_resolution(SatState* sat_state) {
 	  // not all clauses are subsumed
 	  // take a new decision
 	  // is there a conflict?
+	  return 0;
   }
 
  
