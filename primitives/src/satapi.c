@@ -159,11 +159,6 @@ SatState* construct_sat_state(char* cnf_fname) {
   sat_state->decisions = (Lit **) malloc(sizeof (Lit*));
   sat_state->gamma = (Clause *) malloc(sizeof(Clause));
 
-//  sat_state->implications = (Lit *) malloc(sizeof(Lit)); // initialized in the parser
-
-//   sat_state->delta = (Clause *) malloc(sizeof(Clause)); //initialized in the parser
-// 	 sat_state->variables = (Var*) malloc(sizeof(Var)); //initialized later in the parser
-
   sat_state->current_decision_level = 1; // this is by description
   sat_state->num_clauses_in_delta = 0;
   sat_state->num_clauses_in_gamma = 0;
@@ -190,10 +185,13 @@ SatState* construct_sat_state(char* cnf_fname) {
 
 void free_sat_state(SatState* sat_state) {
 //deep cleaning of variables and implications
+#ifdef DEBUG
+	printf("number of variables in sat_state %ld\n",sat_state->num_variables_in_state );
+#endif
 	for(unsigned long i = 0; i<sat_state->num_variables_in_state; i++){
 		free(sat_state->variables[i].negLit->list_of_watched_clauses);
 		free(sat_state->variables[i].posLit->list_of_watched_clauses);
-		free(sat_state->implications[i]->list_of_watched_clauses);
+	//	free(sat_state->implications[i]->list_of_watched_clauses);
 	}
 	free(sat_state->variables);
 	free(sat_state->implications);
@@ -234,8 +232,6 @@ void free_sat_state(SatState* sat_state) {
 	free(sat_state->gamma);
 
 	free(sat_state);
- 
-  return; // dummy value
 }
 
 
