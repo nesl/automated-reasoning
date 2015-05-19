@@ -1,7 +1,16 @@
+/*
+ * satapi.c
+ *
+ *  Created on:  Apr 30, 2015
+ *      Author: salma
+ */
+
+
 #include "satapi.h"
 #include <fcntl.h>
 #include <assert.h>
 #include "ParseDIMACS.h"
+#include "LiteralWatch.h"
 
 /******************************************************************************
  * We explain here the functions you need to implement
@@ -41,23 +50,10 @@ Var* index2varp(unsigned long i, SatState* sat_state) {
  * Do not forget to update the status of literals when you run unit resolution
  ******************************************************************************/
 Lit* pos_literal(Var* var) {
-
-//	Lit *l;
-//	l =(Lit*)malloc(sizeof(Lit));
-//	l->sindex = var->index;
-//	//l.isPositive = 't';
-//	return l;
 	return var->posLit;
 }
 
 Lit* neg_literal(Var* var) {
-
-//	Lit* l;
-//	l = (Lit*)malloc(sizeof(Lit));
-//	// if index was 1000 now i want the neg literal then it is -1000 which is 1000 - 2(1000)
-//	l->sindex = var->index - (2*var->index);
-//  // l.isNegative = 't';
-//	return l;
 	return var->negLit;
 }
 
@@ -191,10 +187,10 @@ void free_sat_state(SatState* sat_state) {
 	for(unsigned long i = 0; i<sat_state->num_variables_in_state; i++){
 		free(sat_state->variables[i].negLit->list_of_watched_clauses);
 		free(sat_state->variables[i].posLit->list_of_watched_clauses);
-	//	free(sat_state->implications[i]->list_of_watched_clauses);
+	//	free(sat_state->implications[i]->list_of_watched_clauses); // this causes segmentation fault!
 	}
 	free(sat_state->variables);
-	free(sat_state->implications);
+	free(sat_state->implications); // this does not!
 
 
 //deep cleaning of decisions
@@ -206,10 +202,10 @@ void free_sat_state(SatState* sat_state) {
 
 //deep cleaning of delta
 	for(unsigned long i =0; i<sat_state->num_clauses_in_delta; i++){
-		free(sat_state->delta[i].u->list_of_watched_clauses);
-		free(sat_state->delta[i].v->list_of_watched_clauses);
-		free(sat_state->delta[i].u);
-		free(sat_state->delta[i].v);
+		free(sat_state->delta[i].L1->list_of_watched_clauses);
+		free(sat_state->delta[i].L2->list_of_watched_clauses);
+		free(sat_state->delta[i].L1);
+		free(sat_state->delta[i].L2);
 		for(unsigned long j=0; j<sat_state->delta[i].num_literals_in_clause; j++){
 			free(sat_state->delta[i].literals[j]->list_of_watched_clauses);
 			free(sat_state->delta[i].literals[j]);
@@ -220,10 +216,10 @@ void free_sat_state(SatState* sat_state) {
 
 //deep cleaning of gamma
 	for(unsigned long i =0; i<sat_state->num_clauses_in_gamma; i++){
-		free(sat_state->gamma[i].u->list_of_watched_clauses);
-		free(sat_state->gamma[i].v->list_of_watched_clauses);
-		free(sat_state->gamma[i].u);
-		free(sat_state->delta[i].v);
+		free(sat_state->gamma[i].L1->list_of_watched_clauses);
+		free(sat_state->gamma[i].L2->list_of_watched_clauses);
+		free(sat_state->gamma[i].L1);
+		free(sat_state->delta[i].L2);
 		for(unsigned long j=0; j<sat_state->gamma[i].num_literals_in_clause; j++){
 			free(sat_state->gamma[i].literals[j]->list_of_watched_clauses);
 			free(sat_state->gamma[i].literals[j]);
@@ -275,6 +271,7 @@ BOOLEAN unit_resolution(SatState* sat_state) {
   // return true;
 
 
+	two_literal_watch(sat_state);
 
 
 

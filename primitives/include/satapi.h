@@ -1,3 +1,10 @@
+/*
+ * satapi.h
+ *
+ *  Created on:  Apr 30, 2015
+ *      Author: salma
+ */
+
 #ifndef SATAPI_H_
 #define SATAPI_H_
 
@@ -38,6 +45,7 @@ typedef struct {
 	BOOLEAN LitValue;			// whether it has value true, false, or free(not set)
 
 	/** for the two literal watch data structure */
+	unsigned long num_watched_clauses;
 	unsigned long* list_of_watched_clauses;  // List of clause indices that contain this literal as a watched literal
 
 } Lit;
@@ -68,12 +76,13 @@ typedef struct {
 typedef struct {
 
   Lit ** literals;
+  unsigned long cindex;
   unsigned long num_literals_in_clause;
   BOOLEAN is_subsumed;
 
   /** for the two literal watch data structure */
-  Lit* u; //first literal
-  Lit* v; //second literal
+  Lit* L1; //first literal
+  Lit* L2; //second literal
 
 } Clause;
 

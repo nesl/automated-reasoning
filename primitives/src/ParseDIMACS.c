@@ -65,7 +65,9 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].negLit->LitState = 0; 						// free literal
 		sat_state->variables[i].negLit->decision_level = 1;
 		sat_state->variables[i].negLit->LitValue = 'd'; 					// initialize to free literal
+		sat_state->variables[i].negLit->num_watched_clauses = 0;
 		sat_state->variables[i].negLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
+
 
 
 		sat_state->variables[i].posLit = (Lit*) malloc(sizeof(Lit) );
@@ -73,7 +75,8 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].posLit->sindex = i+1;						// negative literals start with -1 to -n;
 		sat_state->variables[i].posLit->LitState = 0; 						// free literal
 		sat_state->variables[i].posLit->decision_level = 1;
-		sat_state->variables[i].posLit->LitValue = 'd'; 					// initialize to free literal
+		sat_state->variables[i].posLit->LitValue = 'd';
+		sat_state->variables[i].posLit->num_watched_clauses = 0;// initialize to free literal
 		sat_state->variables[i].posLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
 	}
 
@@ -134,8 +137,8 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 	clause->is_subsumed = 0;
 
 	// For the two literal watch // just initialize here
-	clause->u =  clause->literals[0]; // first literal
-	clause->v =  clause->literals[1]; // second literal
+	clause->L1 =  clause->literals[0]; // first literal
+	clause->L2 =  clause->literals[1]; // second literal
 
 	return countvariables;
 }
@@ -169,6 +172,7 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 		else
 		{
 			// read the CNF
+			sat_state->delta[clausecounter].cindex = clausecounter;
 			unsigned long vars = parseClause(sat_state, line, &sat_state->delta[clausecounter++]);
 #ifdef DEBUG
 			printf("Number of variables: %ld\n", vars);
