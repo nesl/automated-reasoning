@@ -18,18 +18,6 @@ typedef char BOOLEAN; //1 is true; 0 is false; d is don't care or free
  * Basic structures
  ******************************************************************************/
 
-/******************************************************************************
- * Variables:
- * --You must represent variables using the following struct
- * --Variable index must start at 1
- * --Index of a variable must be of type "unsigned long"
- ******************************************************************************/
-
-typedef struct {
-
-	unsigned long index;
-
-} Var;
 
 
 /******************************************************************************
@@ -50,12 +38,24 @@ typedef struct {
 	BOOLEAN LitValue;			// whether it has value true, false, or free(not set)
 
 	/** for the two literal watch data structure */
-	unsigned long* list_of_clauses;  // List of clause indices that contain this literal as a watched literal
-
+	unsigned long* list_of_watched_clauses;  // List of clause indices that contain this literal as a watched literal
 
 } Lit;
 
 
+/******************************************************************************
+ * Variables:
+ * --You must represent variables using the following struct
+ * --Variable index must start at 1
+ * --Index of a variable must be of type "unsigned long"
+ ******************************************************************************/
+
+typedef struct {
+//TODO: I switched the place of Var with Lit to avoid forward declaration --> Check if actually we need this
+	unsigned long index;
+	Lit* posLit; // Keep track of the variable positive literal
+	Lit* negLit; // keep track of the variable negative literal
+} Var;
 /******************************************************************************
  * Clauses:
  * --You must represent clauses using the following struct
@@ -66,14 +66,13 @@ typedef struct {
 
 typedef struct {
 
-  Lit * literals;
+  Lit ** literals;
   unsigned long num_literals_in_clause;
   BOOLEAN is_subsumed;
 
-
   /** for the two literal watch data structure */
-  Lit* u; //first literal index
-  Lit* v; //second literal index
+  Lit* u; //first literal
+  Lit* v; //second literal
 
 } Clause;
 
@@ -92,7 +91,12 @@ typedef struct {
   Lit* implications;
   Clause alpha;
 
-  Var* variables; // not sure yet why needed but it is mentioned in the description so just keep it for now
+  // Variables in the problem space and their positive and negative literals.
+  // keep them here now because I don't know where else to allocate them
+  Var* variables; //Array of variables
+  Lit* positiveLiterals; // Array of all positive literals
+  Lit* negativeLiterals; // Array of all negative literals
+
 
   unsigned long  num_clauses_in_delta;  // m
   unsigned long  num_clauses_in_gamma;

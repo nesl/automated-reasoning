@@ -23,9 +23,7 @@
  ******************************************************************************/
 Var* index2varp(unsigned long i, SatState* sat_state) {
 
-  // ... TO DO ..
-
-  return NULL; // dummy valued
+  return &sat_state->variables[i];
 }
 
 
@@ -44,21 +42,23 @@ Var* index2varp(unsigned long i, SatState* sat_state) {
  ******************************************************************************/
 Lit* pos_literal(Var* var) {
 
-	Lit *l;
-	l =(Lit*)malloc(sizeof(Lit));
-	l->sindex = var->index;
-	//l.isPositive = 't';
-	return l;
+//	Lit *l;
+//	l =(Lit*)malloc(sizeof(Lit));
+//	l->sindex = var->index;
+//	//l.isPositive = 't';
+//	return l;
+	return var->posLit;
 }
 
 Lit* neg_literal(Var* var) {
 
-	Lit* l;
-	l = (Lit*)malloc(sizeof(Lit));
-	// if index was 1000 now i want the neg literal then it is -1000 which is 1000 - 2(1000)
-	l->sindex = var->index - (2*var->index);
-  // l.isNegative = 't';
-	return l;
+//	Lit* l;
+//	l = (Lit*)malloc(sizeof(Lit));
+//	// if index was 1000 now i want the neg literal then it is -1000 which is 1000 - 2(1000)
+//	l->sindex = var->index - (2*var->index);
+//  // l.isNegative = 't';
+//	return l;
+	return var->negLit;
 }
 
 BOOLEAN set_literal(Lit* lit) {
@@ -122,7 +122,7 @@ BOOLEAN subsumed_clause(Clause* clause) {
 
 	// if any of its literals have the LitState =1
 	for (unsigned long int i = 0; i<= clause->num_literals_in_clause; i++){
-		if(clause->literals[i].LitState == 1){
+		if(clause->literals[i]->LitState == 1){
 			clause->is_subsumed = 1;
 			break;
 		}
@@ -230,15 +230,13 @@ void free_sat_state(SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN unit_resolution(SatState* sat_state) {
 
-	//TODO: We may need to do variable order to enhance the performance. But for now just choose the first two literals in the clause to watch
+	//TODO: We may need to do variable order to enhance the performance.
+
   // Algorithm
   // Step 1: I <- literals implied by unit resolution from Delta and Gamma and Decision
-
   // Step 2: If there is a contradiction then alpha <- an asserting clause for Delta, Gamma and Decision
 	// return false;
-
   // return true;
-
 
 
 
@@ -316,7 +314,7 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 	//Set lit values
 	if(lit->sindex < 0)
 		lit->LitValue = 0;
-	else if (lit->sindex > 0);
+	else if (lit->sindex > 0)
 		lit->LitValue = 1;
 
 	lit->LitState = 1;
