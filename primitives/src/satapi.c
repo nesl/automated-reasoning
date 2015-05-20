@@ -347,7 +347,9 @@ BOOLEAN unit_resolution(SatState* sat_state) {
 	//TODO: For now assume unit resolution is called from decide_literal so we are sure that decisions array is not empty
 
 
-	two_literal_watch(sat_state);
+	if(!two_literal_watch(sat_state)) {
+		//contradiction
+	}
 
 
 
@@ -426,6 +428,8 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 		lit->LitValue = 0;
 	else if (lit->sindex > 0)
 		lit->LitValue = 1;
+
+	//TODO:  flip the opposite literal
 
 	lit->LitState = 1;
 

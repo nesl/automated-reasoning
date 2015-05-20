@@ -13,38 +13,36 @@
 /** Global variable for this file **/
 BOOLEAN literal_watched_initialized = 0;
 
-static unsigned long add_watching_clause(Clause* clause, Lit* lit, unsigned long MIN_CAPACITY){
+static void add_watching_clause(Clause* clause, Lit* lit){
 
 	//get clause index.
 	unsigned long index = clause->cindex;
 
-	if(lit->num_watched_clauses >= MIN_CAPACITY){
+	if(lit->num_watched_clauses >= lit->max_size_list_watched_clauses){
 			// needs to realloc the size
-			MIN_CAPACITY =(lit->num_watched_clauses * MALLOC_GROWTH_RATE);
-			lit->list_of_watched_clauses = (unsigned long*) realloc( lit->list_of_watched_clauses, sizeof(unsigned long) * MIN_CAPACITY);
+			lit->max_size_list_watched_clauses =(lit->num_watched_clauses * MALLOC_GROWTH_RATE);
+			lit->list_of_watched_clauses = (unsigned long*) realloc( lit->list_of_watched_clauses, sizeof(unsigned long) * lit->max_size_list_watched_clauses);
 	}
 
 	lit->list_of_watched_clauses[lit->num_watched_clauses] = index;
 
 	lit->num_watched_clauses ++;
-
-	return MIN_CAPACITY;
 }
 
 static void intitialize_watching_clauses(SatState* sat_state){
 
-	unsigned long MIN_CAPACITY1 =1;
-	unsigned long MIN_CAPACITY2 =1;
 	for(unsigned long i =0; i< sat_state->num_clauses_in_delta; i++){
 		Clause watching_clause = sat_state->delta[i];
 		Lit* watched_literal1 = watching_clause.L1;
 		Lit* watched_literal2 = watching_clause.L2;
-		MIN_CAPACITY1 = add_watching_clause(&watching_clause, watched_literal1, MIN_CAPACITY1);
-		MIN_CAPACITY2 = add_watching_clause(&watching_clause, watched_literal2, MIN_CAPACITY2);
+		add_watching_clause(&watching_clause, watched_literal1);
+		add_watching_clause(&watching_clause, watched_literal2);
 	}
 	// Set the initialization flag;
 	literal_watched_initialized = 1;
 }
+
+
 
 
 
@@ -54,7 +52,7 @@ The algorithm taken from the Class Notes for CS264A, UCLA
 
 ******************************************************************************/
 
-void two_literal_watch(SatState* sat_state){
+BOOLEAN two_literal_watch(SatState* sat_state){
 
 	// initialize the list of watched clauses
 	if(!literal_watched_initialized)
@@ -73,7 +71,7 @@ void two_literal_watch(SatState* sat_state){
 	// get the tail of the decisions list
 	Lit* decided_literal = sat_state->decisions[sat_state->num_literals_in_decision -1];
 
-	Var* corresponding_var = index2varp(decided_literal->sindex, sat_state);
+	Var* corresponding_var = index2varp(abs(decided_literal->sindex), sat_state);
 	Lit* resolved_literal = NULL;
 	if(decided_literal->sindex <0){
 		resolved_literal = corresponding_var->posLit;
@@ -91,18 +89,55 @@ void two_literal_watch(SatState* sat_state){
 		// The implications list already has malloc with number of variables.
 		sat_state->implications[sat_state->num_literals_in_implications++] = decided_literal;
 		//wait for a new decision
-		return;
+		return 1;
 	}
 	else{
 		//Get the watched clauses for the resolved literal
 		for(unsigned long i = 0; i < resolved_literal->num_watched_clauses; i++){
 				Clause* wclause = index2clausep( resolved_literal->list_of_watched_clauses[i], sat_state);
+
+
+				// if unit (only one free)
+				unsigned long num_free_literals = 0;
+				for(unsigned long j = 0; j < wclause->num_literals_in_clause; j++){
+					if(is_free_literal(wclause->literals[j])){
+						num_free_literals++;
+					}
+				}
+				if(num_free_literals == 1){
+					//I have a unit clause take an implication
+					continue; // go to the next clause
+				}
+				if (num_free_literals == 0){
+					//contradiction
+					return 0;
+				}
+
+
+
 				// find another literal to watch that is free
 				for(unsigned long j = 0; j < wclause->num_literals_in_clause; j++){
-					if(is_free_literal(wclause->literals[j])){}
-						// remove this clause from the list of watched clauses on the resolved literal and add it to the new free literal
+					if(is_free_literal(wclause->literals[j]) && wclause->literals[j] != wclause->L1 && wclause->literals[j] != wclause->L2){
+						Lit* new_watched_lit = wclause->literals[j];
+						//add the watching clause to the free literal
+						add_watching_clause(wclause, new_watched_lit);
 
+						// remove the resolved literal from the watch and update the clause watch list
+						if(resolved_literal == wclause->L1)
+							wclause->L1 = new_watched_lit;
+						else if (resolved_literal == wclause->L2)
+							wclause->L2 = new_watched_lit;
+						break;
+					}
 				}
+				// else no (free and unwatched) literal is found
+
+//				else{
+//					return; // needs a new decision
+//				}
+
+
+
 
 		}
 	}
@@ -133,7 +168,7 @@ void two_literal_watch(SatState* sat_state){
 //	}
 //
 
-	return ;
+	return 1 ;
 }
 
 

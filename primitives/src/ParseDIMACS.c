@@ -67,6 +67,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].negLit->LitValue = 'd'; 					// initialize to free literal
 		sat_state->variables[i].negLit->num_watched_clauses = 0;
 		sat_state->variables[i].negLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
+		sat_state->variables[i].negLit->max_size_list_watched_clauses = 1;
 
 
 
@@ -78,6 +79,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].posLit->LitValue = 'd';
 		sat_state->variables[i].posLit->num_watched_clauses = 0;// initialize to free literal
 		sat_state->variables[i].posLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
+		sat_state->variables[i].posLit->max_size_list_watched_clauses = 1;
 	}
 
 	return 1;
