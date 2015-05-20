@@ -77,9 +77,13 @@ void two_literal_watch(SatState* sat_state){
 	Lit* resolved_literal = NULL;
 	if(decided_literal->sindex <0){
 		resolved_literal = corresponding_var->posLit;
+		resolved_literal->LitValue = 0;
+		resolved_literal->LitState = 1;
 	}
 	else if(decided_literal->sindex >0){
-		resolved_literal = corresponding_var->posLit;
+		resolved_literal = corresponding_var->negLit;
+		resolved_literal->LitValue = 1;
+		resolved_literal->LitValue = 1;
 	}
 
 	//If no watching clauses on the resolved literal then do nothing and record the decision
@@ -93,7 +97,12 @@ void two_literal_watch(SatState* sat_state){
 		//Get the watched clauses for the resolved literal
 		for(unsigned long i = 0; i < resolved_literal->num_watched_clauses; i++){
 				Clause* wclause = index2clausep( resolved_literal->list_of_watched_clauses[i], sat_state);
-				// find another literal to watch
+				// find another literal to watch that is free
+				for(unsigned long j = 0; j < wclause->num_literals_in_clause; j++){
+					if(is_free_literal(wclause->literals[j])){}
+						// remove this clause from the list of watched clauses on the resolved literal and add it to the new free literal
+
+				}
 
 		}
 	}
