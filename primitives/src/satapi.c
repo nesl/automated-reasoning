@@ -57,37 +57,118 @@ Lit* neg_literal(Var* var) {
 	return var->negLit;
 }
 
+static BOOLEAN is_asserted_literal(Lit* lit){
+	if(lit->sindex<0){
+		switch(lit->LitValue){
+		case 0:
+			lit->LitState = 1; // asserted --> ie negative literal and has value false then it will be evaluated to true
+			return 1;
+			break;
+		case 1:
+			return 0;
+			break;
+		default:
+			return 0;
+			break;
+		}
+	}
+	else if(lit->sindex > 0){
+		switch(lit->LitValue){
+		case 1:
+			lit->LitState = 1;
+			return 1;
+			break;
+		case 0:
+			lit->LitState = 1;
+			return 0;
+			break;
+		default:
+			lit->LitState = 0;
+			return 0;
+			break;
+		}
+	}
+	else
+		return 0; // this should never happen
+
+}
+
+static BOOLEAN is_resolved_literal(Lit* lit){
+	if(lit->sindex<0){
+		switch(lit->LitValue){
+		case 1:
+			lit->LitState = 1; // resolved --> ie negative literal and has value true then it will be evaluated to false
+			return 1;
+			break;
+		case 0:
+			return 0;
+			break;
+		default:
+			return 0;
+			break;
+		}
+	}
+	else if(lit->sindex > 0){
+		switch(lit->LitValue){
+		case 0:
+			lit->LitState = 1;
+			return 1;
+			break;
+		case 1:
+			lit->LitState = 1;
+			return 0;
+			break;
+		default:
+			lit->LitState = 0;
+			return 0;
+			break;
+		}
+	}
+	else
+		return 0; // this should never happen
+}
+
+BOOLEAN is_free_literal(Lit* lit){
+	if(lit->LitState == 0)
+		return 1;
+	else
+		return 0;
+}
+
+
 BOOLEAN set_literal(Lit* lit) {
 
-	//TODO: Check the sanity of this
-	if ( lit->sindex < 0 ) //negative literal
-	 switch(lit->LitValue){
-	 case 0:
-		 lit->LitState = 1; // asserted --> ie negative literal and has value false then it will be evaluated to true
-		 break;
-	 case 1:
-		 lit->LitState = 1 ;// resolved --> ie negative literal and has value true then it will be evaluated to false
-		 break;
-	 case 'd':
-		 lit->LitState = 0; // free --> neither asserted nor resolved
-		 break;
-	 }
-
-	else if(lit->sindex > 0)// positive literal
-	 switch(lit->LitValue){
-	 case 1:
-		 lit->LitState = 1; // asserted --> ie positive literal and has value true then it will be evaluated to true
-		 break;
-	 case 0:
-		 lit->LitState = 1 ;// resolved --> ie positive literal and has value false then it will be evaluated to false
-		 break;
-	 case 'd':
-		 lit->LitState = 0; // free --> neither asserted nor resolved
-		 break;
-	 }
-
-
-	return lit->LitState;
+//	//TODO: Check the sanity of this
+//	if ( lit->sindex < 0 ) //negative literal
+//	 switch(lit->LitValue){
+//	 case 0:
+//		 lit->LitState = 1; // asserted --> ie negative literal and has value false then it will be evaluated to true
+//		 break;
+//	 case 1:
+//		 lit->LitState = 1 ;// resolved --> ie negative literal and has value true then it will be evaluated to false
+//		 break;
+//	 case 'd':
+//		 lit->LitState = 0; // free --> neither asserted nor resolved
+//		 break;
+//	 }
+//
+//	else if(lit->sindex > 0)// positive literal
+//	 switch(lit->LitValue){
+//	 case 1:
+//		 lit->LitState = 1; // asserted --> ie positive literal and has value true then it will be evaluated to true
+//		 break;
+//	 case 0:
+//		 lit->LitState = 1 ;// resolved --> ie positive literal and has value false then it will be evaluated to false
+//		 break;
+//	 case 'd':
+//		 lit->LitState = 0; // free --> neither asserted nor resolved
+//		 break;
+//	 }
+//
+	if(is_asserted_literal(lit) || is_resolved_literal(lit))
+		return 1;
+	else
+		return 0;
 
 }
 

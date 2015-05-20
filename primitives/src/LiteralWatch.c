@@ -48,8 +48,6 @@ static void intitialize_watching_clauses(SatState* sat_state){
 
 
 
-
-
 /******************************************************************************
 	Two literal watch algorithm for unit resolution
 The algorithm taken from the Class Notes for CS264A, UCLA
@@ -67,13 +65,36 @@ void two_literal_watch(SatState* sat_state){
 
 	// I know here that the decision array is filled with at least one element
 	// get the last decision in the decision array and try to propagate from there
+	// The decide literal can be positive or negative.
+	// if u decide a negative literal then its positive version is resolved.
+	// then I need the other literal version!!
 
+	//Hence from the literal absolute index I can get the variable and then access the other literal which will be the resolved literal
+	// get the tail of the decisions list
 	Lit* decided_literal = sat_state->decisions[sat_state->num_literals_in_decision -1];
 
-	//check if the decided literal is resolved literal
-	if((decided_literal->sindex <0 && decided_literal->LitValue == 1) || (decided_literal->sindex > 0 && decided_literal->LitValue == 0) ){
-		for(unsigned long i = 0; i < decided_literal->num_watched_clauses; i++){
-			Clause* wclause = index2clausep( decided_literal->list_of_watched_clauses[i], sat_state);
+	Var* corresponding_var = index2varp(decided_literal->sindex, sat_state);
+	Lit* resolved_literal = NULL;
+	if(decided_literal->sindex <0){
+		resolved_literal = corresponding_var->posLit;
+	}
+	else if(decided_literal->sindex >0){
+		resolved_literal = corresponding_var->posLit;
+	}
+
+	//If no watching clauses on the resolved literal then do nothing and record the decision
+	if(resolved_literal->num_watched_clauses == 0){
+		// The implications list already has malloc with number of variables.
+		sat_state->implications[sat_state->num_literals_in_implications++] = decided_literal;
+		//wait for a new decision
+		return;
+	}
+	else{
+		//Get the watched clauses for the resolved literal
+		for(unsigned long i = 0; i < resolved_literal->num_watched_clauses; i++){
+				Clause* wclause = index2clausep( resolved_literal->list_of_watched_clauses[i], sat_state);
+				// find another literal to watch
+
 		}
 	}
 

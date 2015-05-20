@@ -132,6 +132,8 @@ Lit* pos_literal(Var*);
 Lit* neg_literal(Var*);
 BOOLEAN set_literal(Lit*);
 
+BOOLEAN is_free_literal(Lit*);
+
 //Clauses
 Clause* index2clausep(unsigned long,SatState*);
 BOOLEAN subsumed_clause(Clause*);
