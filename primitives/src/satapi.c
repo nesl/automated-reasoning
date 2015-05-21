@@ -190,8 +190,7 @@ Clause* index2clausep(unsigned long i, SatState* sat_state) {
 
 	assert(i <= sat_state->num_clauses_in_delta);
 
-	return ((sat_state->delta)+i - 1 ); // -1 because we start filling the array from point 0 but indices are from 1 to m
-
+	return ((sat_state->delta)+i);
 }
  
 
@@ -499,12 +498,13 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 
 	lit->LitState = 1;
 
-	lit->decision_level = sat_state->current_decision_level + 1;
+	// Update the decision level
+	sat_state->current_decision_level ++;
+	lit->decision_level = sat_state->current_decision_level;
 
 	// here update the decision array of the sat_state
     sat_state->decisions[sat_state->num_literals_in_decision++] = lit;
-	// update decision level
-	sat_state->current_decision_level++ ;
+
 
   return unit_resolution(sat_state);
 }

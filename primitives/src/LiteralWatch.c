@@ -44,7 +44,7 @@ static void intitialize_watching_clauses(SatState* sat_state){
 }
 
 static Lit* get_resolved_lit(Lit* decided_literal, SatState* sat_state){
-	Var* corresponding_var = index2varp(abs(decided_literal->sindex), sat_state);
+	Var* corresponding_var = index2varp(abs(decided_literal->sindex) - 1, sat_state);
 	Lit* resolved_literal = NULL;
 	if(decided_literal->sindex <0){
 		resolved_literal = corresponding_var->posLit;
@@ -54,8 +54,9 @@ static Lit* get_resolved_lit(Lit* decided_literal, SatState* sat_state){
 	else if(decided_literal->sindex >0){
 		resolved_literal = corresponding_var->negLit;
 		resolved_literal->LitValue = 1;
-		resolved_literal->LitValue = 1;
+		resolved_literal->LitState = 1;
 	}
+	resolved_literal->decision_level = decided_literal->decision_level;
 
 	return resolved_literal;
 }
@@ -73,6 +74,9 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 	}
 
 		list[num++] = lit;
+
+		*num_elements = num;
+		*capacity = cap;
 
 }
 
@@ -103,18 +107,24 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 	unsigned long num_last_decision_lit = 0;
 
 
+#ifdef DEBUG
+	printf("Number of literals in the decision array = %ld", sat_state->num_literals_in_decision);
+#endif
+
 	for(unsigned long i =0; i<sat_state->num_literals_in_decision; i++){
 		if(sat_state->decisions[i]->decision_level != sat_state->current_decision_level)
 			continue;
 		else
 		 // I can just add all the elements after this point without having to check the level of each one again because levels are incremental
-			while(i<sat_state->num_literals_in_decision){
-				add_literal_to_list(literals_in_last_decision,sat_state->decisions[i], &max_size_last_decision_list, &num_last_decision_lit);
-				i++;
-			}
+			//while(i < sat_state->num_literals_in_decision){
+				add_literal_to_list(literals_in_last_decision, sat_state->decisions[i], &max_size_last_decision_list, &num_last_decision_lit);
+			//	i++;
+			//}
 
 	}
-
+#ifdef DEBUG
+	printf("number of literals in the last decision level: %ld\n", num_last_decision_lit);
+#endif
 
 	for(unsigned long i =0; i<num_last_decision_lit; i++){
 
@@ -132,8 +142,9 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 		//If no watching clauses on the resolved literal then do nothing and record the decision
 		if(resolved_literal->num_watched_clauses == 0){
 			// The implications list already has malloc with number of variables.
-			sat_state->implications[sat_state->num_literals_in_implications++] = decided_literal;
+			sat_state->decisions[sat_state->num_literals_in_decision++] = decided_literal;
 			//wait for a new decision
+			//TODO: or go for the next one in the last decision literals list!!!??
 			return 1;
 		}
 		else{
@@ -170,9 +181,9 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 							add_watching_clause(wclause, new_watched_lit);
 
 							// remove the resolved literal from the watch and update the clause watch list
-							if(resolved_literal == wclause->L1)
+							if(resolved_literal->sindex == wclause->L1->sindex)
 								wclause->L1 = new_watched_lit;
-							else if (resolved_literal == wclause->L2)
+							else if (resolved_literal->sindex == wclause->L2->sindex)
 								wclause->L2 = new_watched_lit;
 							break;
 						}
