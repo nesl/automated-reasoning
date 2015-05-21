@@ -20,6 +20,7 @@
 Lit* get_free_literal(SatState* sat_state) {
 
   // ... TO DO ..
+	// assign an value for debugging
 	return sat_state->variables[0].negLit;
 
 }
@@ -65,8 +66,17 @@ int main(int argc, char* argv[]) {
   // construct a sat state and then check satisfiability
   SatState* sat_state = construct_sat_state(cnf_fname);
   if (sat_state != NULL){
-	  // for debugging
-	  decide_literal(sat_state->variables[0].negLit,sat_state);
+	  // for debugging use example in text chapter 3
+#ifdef DEBUG
+	  decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
+	  decide_literal(sat_state->variables[3].posLit, sat_state); // V4
+	  decide_literal(sat_state->variables[4].negLit, sat_state); //-V5
+
+	  for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
+		  printf("%ld\n",sat_state->decisions[i]->sindex);
+	  }
+#endif
+
 //	  if(sat(sat_state))
 //		  printf("SAT\n");
 //	  else

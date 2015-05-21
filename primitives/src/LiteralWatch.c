@@ -14,6 +14,9 @@
 /** Global variable for this file **/
 BOOLEAN literal_watched_initialized = 0;
 
+
+
+
 static void add_watching_clause(Clause* clause, Lit* lit){
 
 	//get clause index.
@@ -96,7 +99,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 	if(!literal_watched_initialized)
 		intitialize_watching_clauses(sat_state);
 
-
+	BOOLEAN contradiction_flag = 0 ;
 	//Clause* conflict_clause = NULL;
 
 	//TODO: Due to recursion of pending list we may need to consider more than one decided literal then we need a list that captures all literals of last decision
@@ -115,7 +118,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 		if(sat_state->decisions[i]->decision_level != sat_state->current_decision_level)
 			continue;
 		else
-		 // I can just add all the elements after this point without having to check the level of each one again because levels are incremental
+		 //TODO: I can just add all the elements after this point without having to check the level of each one again because levels are incremental
 			//while(i < sat_state->num_literals_in_decision){
 				add_literal_to_list(literals_in_last_decision, sat_state->decisions[i], &max_size_last_decision_list, &num_last_decision_lit);
 			//	i++;
@@ -141,11 +144,14 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 
 		//If no watching clauses on the resolved literal then do nothing and record the decision
 		if(resolved_literal->num_watched_clauses == 0){
-			// The implications list already has malloc with number of variables.
-			sat_state->decisions[sat_state->num_literals_in_decision++] = decided_literal;
+			// The decided literal is already in the decision list so no need to record it again
 			//wait for a new decision
 			//TODO: or go for the next one in the last decision literals list!!!??
-			return 1;
+			if(pending_list != NULL)
+				free(pending_list);
+
+			continue;
+			//return 1;
 		}
 		else{
 			//Get the watched clauses for the resolved literal
@@ -168,8 +174,29 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 						continue; // go to the next clause
 					}
 					if (num_free_literals == 0){
-						//contradiction
-						return 0;
+						//contradiction --> everything is resolved
+						//subsumed clause --> do nothing
+
+						// I have to check the other watched literal!?
+
+						Lit* the_other_watched_literal;
+						if(resolved_literal->sindex == wclause->L1->sindex)
+							the_other_watched_literal = wclause->L2;
+						else if(resolved_literal->sindex == wclause->L2->sindex)
+							the_other_watched_literal = wclause->L1;
+
+						if(is_resolved_literal(the_other_watched_literal)){
+							// all literal of the clause are resolved --> contradiction
+							contradiction_flag = 1;
+							if(pending_list!=NULL)
+								free(pending_list);
+						}
+						else if(is_asserted_literal(the_other_watched_literal)){
+							// we do nothing since this clause is subsumed
+							if(pending_list!=NULL)
+								free(pending_list);
+						}
+
 					}
 
 
@@ -212,7 +239,8 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 				}
 
 				//free pending list for the next round
-				free(pending_list);
+				if(pending_list != NULL)
+					free(pending_list);
 
 				//TODO: check that the recursion makes sense
 				//two_literal_watch(sat_state);
@@ -220,9 +248,15 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 
 		}
 	}//end of for for decide literal
-	free(literals_in_last_decision);
 
-	return 1 ;
+
+	if(literals_in_last_decision != NULL)
+		free(literals_in_last_decision);
+
+	if(contradiction_flag == 1)
+		return 0;
+	else
+		return 1 ;
 }
 
 

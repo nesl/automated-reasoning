@@ -65,17 +65,19 @@ Lit* neg_literal(Var* var) {
 	return var->negLit;
 }
 
-static BOOLEAN is_asserted_literal(Lit* lit){
+BOOLEAN is_asserted_literal(Lit* lit){
 	if(lit->sindex<0){
 		switch(lit->LitValue){
 		case 0:
-			lit->LitState = 1; // asserted --> ie negative literal and has value false then it will be evaluated to true
+			assert(lit->LitState == 1); // asserted --> ie negative literal and has value false then it will be evaluated to true
 			return 1;
 			break;
 		case 1:
+			assert(lit->LitState == 1);
 			return 0;
 			break;
 		default:
+			assert(lit->LitState == 0);
 			return 0;
 			break;
 		}
@@ -83,35 +85,37 @@ static BOOLEAN is_asserted_literal(Lit* lit){
 	else if(lit->sindex > 0){
 		switch(lit->LitValue){
 		case 1:
-			lit->LitState = 1;
+			assert(lit->LitState == 1);
 			return 1;
 			break;
 		case 0:
-			lit->LitState = 1;
+			assert(lit->LitState == 1);
 			return 0;
 			break;
 		default:
-			lit->LitState = 0;
+			assert(lit->LitState == 0);
 			return 0;
 			break;
 		}
 	}
-	else
-		return 0; // this should never happen
+
+	return 0; // this should never happen
 
 }
 
-static BOOLEAN is_resolved_literal(Lit* lit){
+BOOLEAN is_resolved_literal(Lit* lit){
 	if(lit->sindex<0){
 		switch(lit->LitValue){
 		case 1:
-			lit->LitState = 1; // resolved --> ie negative literal and has value true then it will be evaluated to false
+			assert(lit->LitState == 1); // resolved --> ie negative literal and has value true then it will be evaluated to false
 			return 1;
 			break;
 		case 0:
+			assert(lit->LitState == 1);
 			return 0;
 			break;
 		default:
+			assert(lit->LitState == 0);
 			return 0;
 			break;
 		}
@@ -119,21 +123,21 @@ static BOOLEAN is_resolved_literal(Lit* lit){
 	else if(lit->sindex > 0){
 		switch(lit->LitValue){
 		case 0:
-			lit->LitState = 1;
+			assert(lit->LitState == 1);
 			return 1;
 			break;
 		case 1:
-			lit->LitState = 1;
+			assert(lit->LitState == 1);
 			return 0;
 			break;
 		default:
-			lit->LitState = 0;
+			assert(lit->LitState == 0);
 			return 0;
 			break;
 		}
 	}
-	else
-		return 0; // this should never happen
+
+	return 0; // this should never happen
 }
 
 BOOLEAN is_free_literal(Lit* lit){
