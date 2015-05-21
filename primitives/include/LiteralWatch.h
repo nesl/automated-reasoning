@@ -9,7 +9,7 @@
 
 #include "satapi.h"
 
-void two_literal_watch(SatState* sat_state);
+BOOLEAN two_literal_watch(SatState* sat_state);
 
 
 #endif /* LITERALWATCH_H_ */

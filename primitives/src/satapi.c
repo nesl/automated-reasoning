@@ -233,7 +233,7 @@ SatState* construct_sat_state(char* cnf_fname) {
 	//initialization
   SatState* sat_state = (SatState *) malloc (sizeof (SatState));
 
-  sat_state->decisions = (Lit **) malloc(sizeof (Lit*));
+  //sat_state->decisions = (Lit **) malloc(sizeof (Lit*));
   sat_state->gamma = (Clause *) malloc(sizeof(Clause));
 
   sat_state->current_decision_level = 1; // this is by description
@@ -347,8 +347,9 @@ BOOLEAN unit_resolution(SatState* sat_state) {
 	//TODO: For now assume unit resolution is called from decide_literal so we are sure that decisions array is not empty
 
 
-	if(!two_literal_watch(sat_state)) {
+	if(two_literal_watch(sat_state) == 0) {
 		//contradiction
+		printf("Contradiction");
 	}
 
 
@@ -429,7 +430,7 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 	else if (lit->sindex > 0)
 		lit->LitValue = 1;
 
-	//TODO:  flip the opposite literal
+	//TODO:  flip the opposite literal -->handled in two literal watch
 
 	lit->LitState = 1;
 

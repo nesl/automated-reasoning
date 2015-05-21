@@ -42,7 +42,38 @@ static void intitialize_watching_clauses(SatState* sat_state){
 	literal_watched_initialized = 1;
 }
 
+static Lit* get_resolved_lit(Lit* decided_literal, SatState* sat_state){
+	Var* corresponding_var = index2varp(abs(decided_literal->sindex), sat_state);
+	Lit* resolved_literal = NULL;
+	if(decided_literal->sindex <0){
+		resolved_literal = corresponding_var->posLit;
+		resolved_literal->LitValue = 0;
+		resolved_literal->LitState = 1;
+	}
+	else if(decided_literal->sindex >0){
+		resolved_literal = corresponding_var->negLit;
+		resolved_literal->LitValue = 1;
+		resolved_literal->LitValue = 1;
+	}
 
+	return resolved_literal;
+}
+
+static void add_pending_literal(Lit** pending_list, Lit* lit, unsigned long* capacity, unsigned long* num_elements){
+
+	unsigned long cap = *capacity;
+	unsigned long num = *num_elements;
+
+	if(num >= cap){
+		// needs to realloc the size
+		cap =num * MALLOC_GROWTH_RATE;
+		pending_list = (Lit**) realloc(pending_list , sizeof(Lit*) * cap);
+
+	}
+
+		pending_list[num++] = lit;
+
+}
 
 
 
@@ -69,20 +100,17 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 
 	//Hence from the literal absolute index I can get the variable and then access the other literal which will be the resolved literal
 	// get the tail of the decisions list
+	//TODO: Due to recursion of pending list we may need to consider more than one decided literal
 	Lit* decided_literal = sat_state->decisions[sat_state->num_literals_in_decision -1];
 
-	Var* corresponding_var = index2varp(abs(decided_literal->sindex), sat_state);
-	Lit* resolved_literal = NULL;
-	if(decided_literal->sindex <0){
-		resolved_literal = corresponding_var->posLit;
-		resolved_literal->LitValue = 0;
-		resolved_literal->LitState = 1;
-	}
-	else if(decided_literal->sindex >0){
-		resolved_literal = corresponding_var->negLit;
-		resolved_literal->LitValue = 1;
-		resolved_literal->LitValue = 1;
-	}
+	Lit* resolved_literal = get_resolved_lit(decided_literal, sat_state);
+
+
+	// Create pending literal list
+	Lit** pending_list = (Lit**)malloc(sizeof(Lit*));
+	unsigned long max_size_pending_list = 1;
+	unsigned long num_pending_lit = 0;
+
 
 	//If no watching clauses on the resolved literal then do nothing and record the decision
 	if(resolved_literal->num_watched_clauses == 0){
@@ -96,16 +124,19 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 		for(unsigned long i = 0; i < resolved_literal->num_watched_clauses; i++){
 				Clause* wclause = index2clausep( resolved_literal->list_of_watched_clauses[i], sat_state);
 
-
+				Lit* free_lit = NULL;
 				// if unit (only one free)
 				unsigned long num_free_literals = 0;
 				for(unsigned long j = 0; j < wclause->num_literals_in_clause; j++){
 					if(is_free_literal(wclause->literals[j])){
 						num_free_literals++;
+						free_lit = wclause->literals[j];
 					}
 				}
 				if(num_free_literals == 1){
 					//I have a unit clause take an implication
+					// the last free literal is the only free literal in this case
+					add_pending_literal(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
 					continue; // go to the next clause
 				}
 				if (num_free_literals == 0){
@@ -130,44 +161,31 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 						break;
 					}
 				}
-				// else no (free and unwatched) literal is found
+		} //end of for
 
-//				else{
-//					return; // needs a new decision
-//				}
+		if(num_pending_lit > 0){
+		// Pass over the pending list and add the literals to the decision while maintaining the level
+			for(unsigned long i =0; i < num_pending_lit; i++){
+				// pending literal was an already watched clause so the associated list of watching clauses is already handled
+				// fix values of pending literal before putting in decision
+				Lit* pending_lit = pending_list[i];
+				if(pending_lit->sindex <0){
+					pending_lit->LitValue = 0;
+					pending_lit->LitState = 1;
+				}
+				else if(pending_lit->sindex >0){
+					pending_lit->LitValue = 1;
+					pending_lit->LitValue = 1;
+				}
+				pending_lit->decision_level = sat_state->current_decision_level;
 
+				sat_state->decisions[sat_state->num_literals_in_decision++] = pending_lit;
+			}
 
-
-
+			//TODO: two_literal_watch(sat_state);
 		}
+
 	}
-
-
-
-
-//	// A state that keeps track of the current decisions and implications
-//	Lit** state = (Lit**)malloc(sizeof(Lit*) * sat_state->num_variables_in_state);
-//
-//	// Pending list
-//	// initialize memory of pending literals with one element and then increase the size by double if needed
-//	unsigned long MIN_CAPACITY_PENDING = 1;
-//	unsigned long num_literals_in_pending = 0;
-//	Lit** pending = (Lit**)malloc(sizeof(Lit*) * MIN_CAPACITY_PENDING );
-
-
-
-
-
-
-	//add literals to pending
-	//realloc
-//	if(num_literals_in_pending >= MIN_CAPACITY_PENDING){
-//		// needs to realloc the size
-//		MIN_CAPACITY_PENDING = num_literals_in_pending * MALLOC_GROWTH_RATE;
-//		pending = (Lit**) realloc( pending, sizeof(Lit*) * MIN_CAPACITY_PENDING);
-//	}
-//
-
 	return 1 ;
 }
 

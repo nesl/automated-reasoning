@@ -38,7 +38,8 @@ static int parseProblemLine(char* line, SatState* sat_state){
 				sat_state->num_variables_in_state = atoi(pch);
 				//allocate memory for n of variables and at the end the number of implications will equal to the number of variables;
 				sat_state->variables =( (Var*) malloc(sizeof(Var) * sat_state->num_variables_in_state) );
-				sat_state->implications =( (Lit **) malloc(sizeof(Lit*) * sat_state->num_variables_in_state) );
+				//sat_state->implications =( (Lit **) malloc(sizeof(Lit*) * sat_state->num_variables_in_state) );
+				sat_state->decisions =( (Lit **) malloc(sizeof(Lit*) * sat_state->num_variables_in_state) );
 			}
 			else{
 				sat_state->num_clauses_in_delta = atoi(pch);
