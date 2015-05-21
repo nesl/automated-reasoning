@@ -12,6 +12,14 @@
 #include "ParseDIMACS.h"
 #include "LiteralWatch.h"
 
+
+
+/* GLOBALS */
+BOOLEAN FLAG_CASE1_UNIT_RESOLUTION = 1;
+BOOLEAN FLAG_CASE2_UNIT_RESOLUTION = 0;
+BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 0;
+
+
 /******************************************************************************
  * We explain here the functions you need to implement
  *
@@ -198,7 +206,7 @@ Clause* index2clausep(unsigned long i, SatState* sat_state) {
 BOOLEAN subsumed_clause(Clause* clause) {
 
 	// if any of its literals have the LitState =1
-	for (unsigned long int i = 0; i<= clause->num_literals_in_clause; i++){
+	for (unsigned long i = 0; i< clause->num_literals_in_clause; i++){
 		if(clause->literals[i]->LitState == 1){
 			clause->is_subsumed = 1;
 			break;
@@ -341,40 +349,97 @@ void free_sat_state(SatState* sat_state) {
  *
  * Yet, the first decided literal must have 2 as its decision level
  ******************************************************************************/
-BOOLEAN unit_resolution(SatState* sat_state) {
-
-//TODO: How to distinguish between the three cases!
-	//TODO: For now assume unit resolution is called from decide_literal so we are sure that decisions array is not empty
-
-
+BOOLEAN unit_resolution_case_1(SatState* sat_state){
 	if(two_literal_watch(sat_state) == 0) {
 		//contradiction
 		printf("Contradiction");
 	}
 
+	return 0;
+}
+
+BOOLEAN unit_resolution_case_2(SatState* sat_state){
+
+	return 0;
+}
+
+BOOLEAN unit_resolution_case_3(SatState* sat_state){
+	// The first time it is called which is case 3 is before any decision or adding assertion clause.
+	// This means search in the clauses for unit literals, if found, add it in a list and decide literal on it and run unit resolution.
+	for(unsigned long i=0; i<sat_state->num_clauses_in_delta; i++){
+		Clause* cur_clause = &(sat_state->delta[i]);
+		if (cur_clause->num_literals_in_clause == 1){
+			// a unit clause
+			Lit* unit_lit = cur_clause->literals[0];
+			//update the literal parameters (decide it)
+			//Set lit values
+			if(unit_lit->sindex < 0)
+				unit_lit->LitValue = 0;
+			else if (unit_lit->sindex > 0)
+				unit_lit->LitValue = 1;
+
+			unit_lit->decision_level = 1; // because it is unit
+			unit_lit->LitState = 1;
+
+			//add it in the decision list without incrementing the decision level
+			sat_state->decisions[sat_state->num_literals_in_decision++] = unit_lit;
+			sat_state->current_decision_level = 1;
+		}
+	}
+	//reset the flag
+	FLAG_CASE3_UNIT_RESOLUTION = 0;
+	// now the decision list if updated with all unit literals
+	// run the two literal watch algorithm
+	if(two_literal_watch(sat_state) == 0) {
+		//contradiction
+		printf("Contradiction");
+		return 0;
+	}
+	else
+		return 1;
+
+}
+
+BOOLEAN unit_resolution(SatState* sat_state) {
+
+//TODO: How to distinguish between the three cases!
+
+
+	if(FLAG_CASE3_UNIT_RESOLUTION == 1){
+		unit_resolution_case_3(sat_state);
+	}
+	if(FLAG_CASE2_UNIT_RESOLUTION == 1){
+		unit_resolution_case_2(sat_state);
+	}
+	if(FLAG_CASE1_UNIT_RESOLUTION == 1){
+		unit_resolution_case_1(sat_state);
+	}
+
+
+
 
 
 
   // if all clauses are subsumed then return true;
-  unsigned long num_subsumed_clauses = 0;
-  for (unsigned long i =0; i <= sat_state->num_clauses_in_delta; i++){
-	  if(subsumed_clause(&sat_state->delta[i])){
-		  num_subsumed_clauses ++;
-		  continue;
-	  }
-	  else
-		  break;
-  }
-  if(num_subsumed_clauses == sat_state->num_clauses_in_delta){
-	  //all clauses are subsumed
-	  return 1;
-  }
-  else{
-	  // not all clauses are subsumed
-	  // take a new decision
-	  // is there a conflict?
-	  return 0;
-  }
+//  unsigned long num_subsumed_clauses = 0;
+//  for (unsigned long i =0; i <= sat_state->num_clauses_in_delta; i++){
+//	  if(subsumed_clause(&sat_state->delta[i])){
+//		  num_subsumed_clauses ++;
+//		  continue;
+//	  }
+//	  else
+//		  break;
+//  }
+//  if(num_subsumed_clauses == sat_state->num_clauses_in_delta){
+//	  //all clauses are subsumed
+//	  return 1;
+//  }
+//  else{
+//	  // not all clauses are subsumed
+//	  // take a new decision
+//	  // is there a conflict?
+//	  return 0;
+//  }
 
  
   return 0; // dummy value

@@ -64,12 +64,15 @@ int main(int argc, char* argv[]) {
 	
   // construct a sat state and then check satisfiability
   SatState* sat_state = construct_sat_state(cnf_fname);
-  if (sat_state != NULL)
+  if (sat_state != NULL){
+	  // for debugging
+	  decide_literal(sat_state->variables[0].negLit,sat_state);
+//	  if(sat(sat_state))
+//		  printf("SAT\n");
+//	  else
+//		  printf("UNSAT\n");
 	  free_sat_state(sat_state);
-
-//  if(sat(sat_state)) printf("SAT\n");
-//  else printf("UNSAT\n");
-//  free_sat_state(sat_state);
+  }
 #ifdef DEBUG
   printf("END OF SAT_STATE_CONSTRUCT");
 #endif
