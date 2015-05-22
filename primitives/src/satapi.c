@@ -356,21 +356,25 @@ void free_sat_state(SatState* sat_state) {
  *
  * Yet, the first decided literal must have 2 as its decision level
  ******************************************************************************/
-BOOLEAN unit_resolution_case_1(SatState* sat_state){
-	if(two_literal_watch(sat_state) == 0) {
-		//contradiction
-		printf("Contradiction");
-	}
+static BOOLEAN unit_resolution_case_1(SatState* sat_state){
+	//reset the flag
+		FLAG_CASE1_UNIT_RESOLUTION = 0;
+		// run the two literal watch based on the new decision
+		return two_literal_watch(sat_state);
+}
 
+static BOOLEAN unit_resolution_case_2(SatState* sat_state){
+
+	//reset the flag
+	FLAG_CASE2_UNIT_RESOLUTION = 0;
+	//TODO: // something has to be done with the new conflict clause
 	return 0;
 }
 
-BOOLEAN unit_resolution_case_2(SatState* sat_state){
+static BOOLEAN unit_resolution_case_3(SatState* sat_state){
+	//Reset the flag in this case because I don't want to execute this except once
+		FLAG_CASE3_UNIT_RESOLUTION = 0;
 
-	return 0;
-}
-
-BOOLEAN unit_resolution_case_3(SatState* sat_state){
 	// The first time it is called which is case 3 is before any decision or adding assertion clause.
 	// This means search in the clauses for unit literals, if found, add it in a list and decide literal on it and run unit resolution.
 	for(unsigned long i=0; i<sat_state->num_clauses_in_delta; i++){
@@ -395,15 +399,9 @@ BOOLEAN unit_resolution_case_3(SatState* sat_state){
 	}
 	//reset the flag
 	FLAG_CASE3_UNIT_RESOLUTION = 0;
-	// now the decision list if updated with all unit literals
+	// now the decision list is updated with all unit literals
 	// run the two literal watch algorithm
-//	if(two_literal_watch(sat_state) == 0) {
-//		//contradiction
-//		printf("Contradiction");
-//		return 0;
-//	}
-//	else
-//		return 1;
+
 	return two_literal_watch(sat_state);
 
 }
