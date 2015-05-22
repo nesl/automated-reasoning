@@ -5,6 +5,12 @@
 #include "satapi.h"
 
 
+#ifdef DEBUG
+	BOOLEAN choose1 = 0;
+	BOOLEAN choose2 = 0;
+	BOOLEAN choose3 = 0;
+#endif
+
 /******************************************************************************
  * SAT solver 
  ******************************************************************************/
@@ -21,18 +27,39 @@ Lit* get_free_literal(SatState* sat_state) {
 
   // ... TO DO ..
 	// assign an value for debugging
-	return sat_state->variables[0].negLit;
+#ifdef DEBUG
+	if(choose1 == 0){
+		choose1 = 1;
+		return sat_state->variables[0].negLit;
+
+	}
+	else if (choose2 == 0){
+		choose2 = 1;
+		return sat_state->variables[3].posLit;
+
+	}
+	else if(choose3 == 0){
+		choose3 =1;
+		return sat_state->variables[4].negLit;
+
+	}
+	else
+		return NULL;
+#endif
+
+	return NULL;
 
 }
 
 BOOLEAN sat_aux(SatState* sat_state) {
   Lit* lit = get_free_literal(sat_state);
-  if(lit==NULL) return 1; // all literals are implied
+  if(lit==NULL)
+	  return 1; // all literals are implied
 
   BOOLEAN ret = 0;
 
   if(decide_literal(lit,sat_state)) ret = sat_aux(sat_state);
-  undo_decide_literal(sat_state);
+  undo_decide_literal(sat_state);   //TODO: I don't know why undo decide literal is called ... the ret value in the stack is not correct
 
   if(ret==0) { // there is a conflict
     if(at_assertion_level(sat_state) && add_asserting_clause(sat_state))
@@ -45,8 +72,9 @@ BOOLEAN sat_aux(SatState* sat_state) {
 
 BOOLEAN sat(SatState* sat_state) {
   BOOLEAN ret = 0;
-  if(unit_resolution(sat_state)) ret = sat_aux(sat_state);
+  if(unit_resolution(sat_state))  ret = sat_aux(sat_state);
   undo_unit_resolution(sat_state); // everything goes back to the initial state
+
   return ret;
 }
 
@@ -71,21 +99,31 @@ int main(int argc, char* argv[]) {
 	  decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
 	  decide_literal(sat_state->variables[3].posLit, sat_state); // V4
 	  decide_literal(sat_state->variables[4].negLit, sat_state); //-V5
-
-	  for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
-		  printf("%ld\n",sat_state->decisions[i]->sindex);
-	  }
 #endif
+
 
 //	  if(sat(sat_state))
 //		  printf("SAT\n");
 //	  else
 //		  printf("UNSAT\n");
-	  free_sat_state(sat_state);
+
+
+
+#ifdef DEBUG
+//	  decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
+//	  decide_literal(sat_state->variables[3].posLit, sat_state); // V4
+//	  decide_literal(sat_state->variables[4].negLit, sat_state); //-V5
+
+	  for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
+		  printf("%ld\n",sat_state->decisions[i]->sindex);
+	  }
+#endif
   }
 #ifdef DEBUG
   printf("END OF SAT_STATE_CONSTRUCT");
 #endif
+
+  free_sat_state(sat_state);
   return 0;
 }
 

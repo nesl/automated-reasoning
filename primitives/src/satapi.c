@@ -16,9 +16,9 @@
 #define MALLOC_GROWTH_RATE 	   	2
 
 /* GLOBALS */
-BOOLEAN FLAG_CASE1_UNIT_RESOLUTION = 1;
+BOOLEAN FLAG_CASE1_UNIT_RESOLUTION = 0;
 BOOLEAN FLAG_CASE2_UNIT_RESOLUTION = 0;
-BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 0;
+BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 1;
 
 
 /******************************************************************************
@@ -373,7 +373,7 @@ static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 
 static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 	//Reset the flag in this case because I don't want to execute this except once
-		FLAG_CASE3_UNIT_RESOLUTION = 0;
+	FLAG_CASE3_UNIT_RESOLUTION = 0;
 
 	// The first time it is called which is case 3 is before any decision or adding assertion clause.
 	// This means search in the clauses for unit literals, if found, add it in a list and decide literal on it and run unit resolution.
@@ -401,8 +401,13 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 	FLAG_CASE3_UNIT_RESOLUTION = 0;
 	// now the decision list is updated with all unit literals
 	// run the two literal watch algorithm
-
-	return two_literal_watch(sat_state);
+	if(sat_state->num_literals_in_decision == 0){
+		// there was no unit clause
+		return 1; //just return and takes the next step
+	}
+	else{
+		return two_literal_watch(sat_state);
+	}
 
 }
 
@@ -412,14 +417,16 @@ BOOLEAN unit_resolution(SatState* sat_state) {
 
 
 	if(FLAG_CASE3_UNIT_RESOLUTION == 1){
-		unit_resolution_case_3(sat_state);
+		return unit_resolution_case_3(sat_state);
 	}
-	if(FLAG_CASE2_UNIT_RESOLUTION == 1){
-		unit_resolution_case_2(sat_state);
+	else if(FLAG_CASE2_UNIT_RESOLUTION == 1){
+		return unit_resolution_case_2(sat_state);
 	}
-	if(FLAG_CASE1_UNIT_RESOLUTION == 1){
-		unit_resolution_case_1(sat_state);
+	else if(FLAG_CASE1_UNIT_RESOLUTION == 1){
+		return unit_resolution_case_1(sat_state);
 	}
+	else
+		return 0;
 
 
 
@@ -447,8 +454,7 @@ BOOLEAN unit_resolution(SatState* sat_state) {
 //	  return 0;
 //  }
 
- 
-  return 0; // dummy value
+
 }
 
 
@@ -460,10 +466,11 @@ void undo_unit_resolution(SatState* sat_state) {
 
 	unsigned long num_reduced_decisions = 0;
 	// undo the set literals at the current decision level
-	for(unsigned long i = sat_state->num_literals_in_decision; i >= 1; i--){
+	for(unsigned long i = sat_state->num_literals_in_decision-1; i >= 0; i--){
 		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level){
-			sat_state->decisions[i]->decision_level = 0;
+			sat_state->decisions[i]->decision_level = 1;
 			sat_state->decisions[i]->LitState = 0;
+			sat_state->decisions[i]->LitValue = 'd';
 			num_reduced_decisions ++;
 		}
 		//TODO (Performance enhancing):
@@ -494,6 +501,7 @@ void undo_unit_resolution(SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 
+	assert(lit!=NULL);
 	//update the literal parameters
 	//Set lit values
 	if(lit->sindex < 0)
@@ -512,8 +520,9 @@ BOOLEAN decide_literal(Lit* lit, SatState* sat_state) {
 	// here update the decision array of the sat_state
     sat_state->decisions[sat_state->num_literals_in_decision++] = lit;
 
+    FLAG_CASE1_UNIT_RESOLUTION = 1;
 
-  return unit_resolution(sat_state);
+    return unit_resolution(sat_state);
 }
 
 
@@ -587,8 +596,17 @@ BOOLEAN add_asserting_clause(SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN at_assertion_level(SatState* sat_state) {
 
-  // ... TO DO ..
+// ... TO DO ..
+	unsigned long asserting_level = 0;
+	for(unsigned long i = 0; i < sat_state->alpha.num_literals_in_clause; i++){
+		if(asserting_level < sat_state->alpha.literals[i]->decision_level)
+			asserting_level = sat_state->alpha.literals[i]->decision_level;
+	}
 
+	if(sat_state->current_decision_level == asserting_level)
+		return 1;
+	else
+		return 0;
   return 0; // dummy value
 }
 
@@ -618,8 +636,11 @@ BOOLEAN at_start_level(SatState* sat_state) {
 BOOLEAN conflict_exists(SatState* sat_state) {
 
   // ... TO DO ..
+	if(add_asserting_clause(sat_state))
+		return 0;
+	else
+		return 1;
 
-  return 0; // dummy value
 }
 
 /******************************************************************************

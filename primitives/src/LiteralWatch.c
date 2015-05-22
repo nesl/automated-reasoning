@@ -93,7 +93,7 @@ The algorithm taken from the Class Notes for CS264A, UCLA
 BOOLEAN two_literal_watch(SatState* sat_state){
 
 	// Once I entered here I must have elements in the decision array
-	assert(sat_state->num_literals_in_decision > 0);
+	//assert(sat_state->num_literals_in_decision > 0);
 
 	// initialize the list of watched clauses
 	if(!literal_watched_initialized)
@@ -190,11 +190,20 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 							contradiction_flag = 1;
 							if(pending_list!=NULL)
 								free(pending_list);
+
+							if(literals_in_last_decision != NULL)
+								free(literals_in_last_decision);
+
+							return 0;
+
 						}
 						else if(is_asserted_literal(the_other_watched_literal)){
 							// we do nothing since this clause is subsumed
+
+							contradiction_flag = 0; // just checking  if I have to reassign the value in order to avoid the compilation optimization
 							if(pending_list!=NULL)
 								free(pending_list);
+							continue;
 						}
 
 					}
@@ -250,12 +259,13 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 	}//end of for for decide literal
 
 
+
 	if(literals_in_last_decision != NULL)
 		free(literals_in_last_decision);
 
-	if(contradiction_flag == 1)
-		return 0;
-	else
+//	if(contradiction_flag == 1)
+//		return 0;
+//	else
 		return 1 ;
 }
 
