@@ -99,7 +99,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 	if(!literal_watched_initialized)
 		intitialize_watching_clauses(sat_state);
 
-	BOOLEAN contradiction_flag = 0 ;
+	BOOLEAN contradiction_flag;
 	//Clause* conflict_clause = NULL;
 
 	//TODO: Due to recursion of pending list we may need to consider more than one decided literal then we need a list that captures all literals of last decision
@@ -169,6 +169,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 					}
 					if(num_free_literals == 1){
 						//I have a unit clause take an implication
+						free_lit->antecedent = decided_literal; // remember the decision list is updated with the pending list so that's ok
 						// the last free literal is the only free literal in this case
 						add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
 						continue; // go to the next clause

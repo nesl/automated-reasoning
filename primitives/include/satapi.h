@@ -18,7 +18,7 @@
  * typedefs
  ******************************************************************************/
 
-typedef char BOOLEAN; //1 is true; 0 is false; d is don't care or free
+typedef char BOOLEAN; //1 is true; 0 is false; u is unassigned
 
 
 /******************************************************************************
@@ -34,8 +34,9 @@ typedef char BOOLEAN; //1 is true; 0 is false; d is don't care or free
  * --Negative literals' indices range from -n to -1 (n is the number of variables)
  * --Index of a literal must be of type "signed long"
  ******************************************************************************/
-
-typedef struct {
+//TODO: Check if there is any other way to do this forward declaration
+typedef struct Lit Lit;//forward declaration
+struct Lit{
 
 	signed long sindex;
 	BOOLEAN LitState;			  // whether it is set or not
@@ -49,8 +50,11 @@ typedef struct {
 	unsigned long* list_of_watched_clauses;  // List of clause indices that contain this literal as a watched literal
 	unsigned long max_size_list_watched_clauses;
 
+	/** for the non-chronological backtracking */
+	Lit* antecedent;
+
 	unsigned long vsids_counter; // for use in variable selection
-} Lit;
+};
 
 
 /******************************************************************************

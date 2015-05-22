@@ -470,7 +470,7 @@ void undo_unit_resolution(SatState* sat_state) {
 		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level){
 			sat_state->decisions[i]->decision_level = 1;
 			sat_state->decisions[i]->LitState = 0;
-			sat_state->decisions[i]->LitValue = 'd';
+			sat_state->decisions[i]->LitValue = 'u';
 			num_reduced_decisions ++;
 		}
 		//TODO (Performance enhancing):
@@ -572,6 +572,10 @@ BOOLEAN add_asserting_clause(SatState* sat_state) {
 
   //TODO: Check the sanity if this
 	FLAG_CASE2_UNIT_RESOLUTION = 1;
+
+	//learn clause
+	CDCL_non_chronological_backtracking(sat_state);
+
 	//check the asserting level of the asserting clause
 	unsigned long asserting_level = 0;
 	for(unsigned long i = 0; i < sat_state->alpha.num_literals_in_clause; i++){
@@ -636,10 +640,12 @@ BOOLEAN at_start_level(SatState* sat_state) {
 BOOLEAN conflict_exists(SatState* sat_state) {
 
   // ... TO DO ..
+
 	if(add_asserting_clause(sat_state))
 		return 0;
 	else
 		return 1;
+
 
 }
 
