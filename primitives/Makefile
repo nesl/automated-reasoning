@@ -5,11 +5,11 @@ AR = ar
 AR_FLAGS = -cq
 LIB_FILE = libsat.a
 
-SRC = src/satapi.c src/ParseDIMACS.c src/LiteralWatch.c src/main.c 
+SRC = src/satapi.c src/ParseDIMACS.c src/LiteralWatch.c src/VSIDS.c src/main.c  
 
 OBJS=$(SRC:.c=.o)
 
-HEADERS = include/satapi.h include/ParseDIMACS.h include/LiteralWatch.h
+HEADERS = include/satapi.h include/ParseDIMACS.h include/LiteralWatch.h include/VSIDS.h
 
 #sat: $(OBJS)
 #	$(AR) $(AR_FLAGS) $(LIB_FILE) $(OBJS)
