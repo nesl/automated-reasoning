@@ -40,8 +40,9 @@ void _initialize_vsids_counters (SatState * sat_state)
 		Lit * neg_lit = cur_var->negLit;
 
 		printf("Literal %d occurs %lu times (address %x)\n", pos_lit->sindex, pos_lit->vsids_counter, pos_lit);
+		printf("Literal %d occurs %lu times (address %x)\n", neg_lit->sindex, neg_lit->vsids_counter, neg_lit);
 	}
-	//exit(0);
+	exit(0);
 
 }
 

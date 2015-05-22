@@ -1,0 +1,4 @@
+# gitignore file -- specifies files git shouldn't bother tracking
+
+# ignore generated object files
+*.o
