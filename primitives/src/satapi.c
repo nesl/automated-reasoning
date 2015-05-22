@@ -20,6 +20,31 @@ BOOLEAN FLAG_CASE2_UNIT_RESOLUTION = 0;
 BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 0;
 
 
+void _initialize_vsids_counters (SatState * sat_state)
+{
+	for (unsigned long cidx = 0; cidx < sat_state->num_clauses_in_delta; cidx++)
+	{
+		Clause * cur_clause = & (sat_state->delta[cidx]);
+		for (unsigned long lidx = 0; lidx < cur_clause->num_literals_in_clause; lidx++)
+		{
+			Lit * cur_lit = & (cur_clause->literals[lidx]);
+			cur_lit->vsids_counter++;
+			printf("happening to %x\n", cur_lit);
+		}
+	}
+
+	for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_state; vidx++)
+	{
+		Var * cur_var = & (sat_state->variables[vidx]);
+		Lit * pos_lit = cur_var->posLit;
+		Lit * neg_lit = cur_var->negLit;
+
+		printf("Literal %d occurs %lu times (address %x)\n", pos_lit->sindex, pos_lit->vsids_counter, pos_lit);
+	}
+	//exit(0);
+
+}
+
 /******************************************************************************
  * We explain here the functions you need to implement
  *
@@ -267,6 +292,8 @@ SatState* construct_sat_state(char* cnf_fname) {
   }
 
   fclose(cnf_file);
+
+	_initialize_vsids_counters(sat_state);
 
   return sat_state;
 }

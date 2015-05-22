@@ -48,6 +48,8 @@ typedef struct {
 	unsigned long num_watched_clauses;
 	unsigned long* list_of_watched_clauses;  // List of clause indices that contain this literal as a watched literal
 	unsigned long max_size_list_watched_clauses;
+
+	unsigned long vsids_counter; // for use in variable selection
 } Lit;
 
 

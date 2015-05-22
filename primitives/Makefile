@@ -18,7 +18,7 @@ HEADERS = include/satapi.h include/ParseDIMACS.h include/LiteralWatch.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(LIB_FILE)
+	rm -f $(OBJS) $(LIB_FILE) sat
 
 
 EXEC_FILE = sat 
