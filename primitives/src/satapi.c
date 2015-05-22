@@ -13,6 +13,7 @@
 #include "LiteralWatch.h"
 #include "VSIDS.h"
 
+#define MALLOC_GROWTH_RATE 	   	2
 
 /* GLOBALS */
 BOOLEAN FLAG_CASE1_UNIT_RESOLUTION = 1;
@@ -269,7 +270,7 @@ SatState* construct_sat_state(char* cnf_fname) {
   fclose(cnf_file);
 
 
-	 initialize_vsids_counters(sat_state);
+	// initialize_vsids_counters(sat_state);
 
   return sat_state;
 }
@@ -551,9 +552,28 @@ void undo_decide_literal(SatState* sat_state) {
  * be the same as the start level S, which is 1 (i.e., the level in
  * which no decision is made) 
  ******************************************************************************/
+static void add_clause_to_gamma(SatState* sat_state){
+	if(sat_state->num_clauses_in_gamma >= sat_state->max_size_list_gamma){
+		// needs to realloc the size
+		sat_state->max_size_list_gamma =(sat_state->num_clauses_in_gamma * MALLOC_GROWTH_RATE);
+		sat_state->gamma = (Clause*) realloc( sat_state->gamma, sizeof(Clause*) * (sat_state->max_size_list_gamma));
+	}
+	else
+		sat_state->gamma[sat_state->num_clauses_in_gamma++] = sat_state->alpha;
+}
 BOOLEAN add_asserting_clause(SatState* sat_state) {
 
-  // ... TO DO ..
+  //TODO: Check the sanity if this
+	FLAG_CASE2_UNIT_RESOLUTION = 1;
+	//check the asserting level of the asserting clause
+	unsigned long asserting_level = 0;
+	for(unsigned long i = 0; i < sat_state->alpha.num_literals_in_clause; i++){
+		if(asserting_level < sat_state->alpha.literals[i]->decision_level)
+			asserting_level = sat_state->alpha.literals[i]->decision_level;
+	}
+
+
+	add_clause_to_gamma(sat_state);
 
 	return unit_resolution(sat_state);
 }

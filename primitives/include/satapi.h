@@ -113,6 +113,8 @@ typedef struct {
   unsigned long  num_literals_in_implications;
   unsigned long  num_variables_in_state; //n
 
+  unsigned long max_size_list_gamma;
+
   unsigned long current_decision_level;
 
 } SatState;
