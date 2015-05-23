@@ -10,6 +10,7 @@
 
 #include "satapi.h"
 
-void _initialize_vsids_counters (SatState * sat_state);
+void initialize_vsids_scores (SatState * sat_state);
+void update_vsids_scores (SatState * sat_state);
 
 #endif /* VSIDS_H_ */

@@ -270,7 +270,7 @@ SatState* construct_sat_state(char* cnf_fname) {
   fclose(cnf_file);
 
 
-	// initialize_vsids_counters(sat_state);
+	initialize_vsids_scores(sat_state);
 
   return sat_state;
 }
@@ -585,6 +585,8 @@ BOOLEAN add_asserting_clause(SatState* sat_state) {
 
 
 	add_clause_to_gamma(sat_state);
+
+	update_vsids_scores(sat_state);
 
 	return unit_resolution(sat_state);
 }

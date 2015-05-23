@@ -53,7 +53,7 @@ struct Lit{
 	/** for the non-chronological backtracking */
 	Lit* antecedent;
 
-	unsigned long vsids_counter; // for use in variable selection
+	unsigned long vsids_score; // for use in variable selection
 };
 
 

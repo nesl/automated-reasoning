@@ -9,7 +9,6 @@
  * SAT solver 
  ******************************************************************************/
 
-
 /******************************************************************************
  * Apart from the primitives in satapi.h, you should implement the following
  * function
@@ -22,8 +21,50 @@ Lit* get_free_literal(SatState* sat_state) {
   //this is the place for heuristic and variable order
   //for now just pick the first free literal encountered
 
-  
-  return NULL; // dummy value
+	Lit * max_lit = NULL;
+	unsigned long max_score = 0;
+
+	for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_state; vidx++)
+	{
+		Var cur_var = sat_state->variables[vidx];
+
+		Lit * cur_lit;
+
+		cur_lit = cur_var.posLit;
+
+		if (cur_lit->vsids_score > max_score)
+		{
+			max_score = cur_score;
+			max_lit = cur_lit;
+		}
+		else if (cur_lit->vsids_score == max_score)
+		{
+			// break ties with some randomization
+			if (rand() % 2) {
+				max_score = cur_score;
+				max_lit = cur_lit;
+			}
+		}
+
+		cur_lit = cur_var.negLit;
+
+		// ugly
+		if (cur_lit->vsids_score > max_score)
+		{
+			max_score = cur_score;
+			max_lit = cur_lit;
+		}
+		else if (cur_lit->vsids_score == max_score)
+		{
+			// break ties with some randomization
+			if (rand() % 2) {
+				max_score = cur_score;
+				max_lit = cur_lit;
+			}
+		}
+	}
+
+  return max_lit;
 }
 
 BOOLEAN sat_aux(SatState* sat_state) {
