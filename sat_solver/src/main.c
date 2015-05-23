@@ -34,34 +34,27 @@ Lit* get_free_literal(SatState* sat_state) {
 
 		if (cur_lit->vsids_score > max_score)
 		{
-			max_score = cur_score;
-			max_lit = cur_lit;
+			if (is_free_literal(cur_lit))
+			{
+				max_score = cur_score;
+				max_lit = cur_lit;
+			}
 		}
 		else if (cur_lit->vsids_score == max_score)
 		{
-			// break ties with some randomization
-			if (rand() % 2) {
-				max_score = cur_score;
-				max_lit = cur_lit;
+			if (is_free_literal(cur_lit))
+			{
+				// break ties with some randomization
+				if (rand() % 2) {
+					max_score = cur_score;
+					max_lit = cur_lit;
+				}
 			}
 		}
 
 		cur_lit = cur_var.negLit;
 
 		// ugly
-		if (cur_lit->vsids_score > max_score)
-		{
-			max_score = cur_score;
-			max_lit = cur_lit;
-		}
-		else if (cur_lit->vsids_score == max_score)
-		{
-			// break ties with some randomization
-			if (rand() % 2) {
-				max_score = cur_score;
-				max_lit = cur_lit;
-			}
-		}
 	}
 
   return max_lit;
