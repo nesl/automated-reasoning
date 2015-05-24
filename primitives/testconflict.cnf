@@ -1,0 +1,9 @@
+c test for conflict. CNF from example in chapter 3
+p cnf 6 7
+1 2 0
+2 3 0
+-1 -4 5 0
+-1 4 6 0
+-1 -5 6 0
+-1 4 -6 0
+-1 -5 -6 0
