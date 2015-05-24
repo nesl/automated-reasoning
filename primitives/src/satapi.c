@@ -599,7 +599,7 @@ BOOLEAN add_asserting_clause(SatState* sat_state) {
  ******************************************************************************/
 BOOLEAN at_assertion_level(SatState* sat_state) {
 
-// ... TO DO ..
+//TODO: What is the need of this api actually???
 	unsigned long asserting_level = 0;
 	for(unsigned long i = 0; i < sat_state->alpha.num_literals_in_clause; i++){
 		if(asserting_level < sat_state->alpha.literals[i]->decision_level)
