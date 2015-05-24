@@ -55,7 +55,6 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 		// needs to realloc the size
 		cap =num * MALLOC_GROWTH_RATE;
 		list = (Lit**) realloc(list , sizeof(Lit*) * cap);
-
 	}
 
 		list[num++] = lit;
@@ -101,7 +100,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 	if(!literal_watched_initialized)
 		intitialize_watching_clauses(sat_state);
 
-	BOOLEAN contradiction_flag;
+	BOOLEAN contradiction_flag = 0;
 
 	//TODO: Due to recursion of pending list we may need to consider more than one decided literal then we need a list that captures all literals of last decision
 
@@ -119,7 +118,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 		if(sat_state->decisions[i]->decision_level != sat_state->current_decision_level)
 			continue;
 		else
-		 //TODO: I can just add all the elements after this point without having to check the level of each one again because levels are incremental
+		 //TODO: Enhance: I can just add all the elements after this point without having to check the level of each one again because levels are incremental
 			//while(i < sat_state->num_literals_in_decision){
 				add_literal_to_list(literals_in_last_decision, sat_state->decisions[i], &max_size_last_decision_list, &num_last_decision_lit);
 			//	i++;
@@ -149,10 +148,10 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 			//wait for a new decision
 			//TODO: or go for the next one in the last decision literals list!!!??
 			if(pending_list != NULL)
-				free(pending_list);
+				FREE(pending_list);
 
 			continue;
-			//return 1;
+
 		}
 		else{
 			//Get the watched clauses for the resolved literal
@@ -190,27 +189,27 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 							// all literal of the clause are resolved --> contradiction
 							contradiction_flag = 1;
 							sat_state->conflict_clause = wclause;
-							if(pending_list!=NULL)
-								free(pending_list);
+							//TODO: why this cause double free --- > where should I free it!!
+//							if(pending_list != NULL && num_pending_lit != 0)
+//								FREE(pending_list); // use the macro free instead
 
-							if(literals_in_last_decision != NULL)
-								free(literals_in_last_decision);
+//							if(literals_in_last_decision != NULL && num_last_decision_lit !=0)
+//								FREE(literals_in_last_decision); // use the macro free instead
 
-							return 0;
+							break; //break from loop of watched clauses over this decided literal
+							//return 0;
 
 						}
 						else if(is_asserted_literal(the_other_watched_literal)){
 							// we do nothing since this clause is subsumed
 
 							contradiction_flag = 0; // just checking  if I have to reassign the value in order to avoid the compilation optimization
-							if(pending_list!=NULL)
-								free(pending_list);
+//							if(pending_list!=NULL) // I can't do this because in the next loop pending list is freed and I can't assign it!!!
+//								free(pending_list);
 							continue;
 						}
 
 					}
-
-
 					// find another literal to watch that is free
 					for(unsigned long j = 0; j < wclause->num_literals_in_clause; j++){
 						if(is_free_literal(wclause->literals[j]) && wclause->literals[j] != wclause->L1 && wclause->literals[j] != wclause->L2){
@@ -226,7 +225,8 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 							break;
 						}
 					}
-			} //end of for
+
+			} //end of for for watched clauses over this decided literal
 
 			if(num_pending_lit > 0){
 			// Pass over the pending list and add the literals to the decision while maintaining the level
@@ -249,25 +249,33 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 					literals_in_last_decision[num_last_decision_lit++] = pending_lit;
 				}
 
-				//free pending list for the next round
-				if(pending_list != NULL)
-					free(pending_list);
-
-				//TODO: check that the recursion makes sense
-				//two_literal_watch(sat_state);
+//				//free pending list for the next round
+//				if(pending_list != NULL && num_pending_lit != 0)
+//					FREE(pending_list);
 			}
 
 		}
+
+		//free pending list for the next round
+		//--> pending list is related to each decided literal. so before taking a new decision clear the pending list
+		//double free or corruption (out):
+		if(pending_list != NULL && num_pending_lit != 0)
+			FREE(pending_list);
+
+		if(contradiction_flag == 1) // no need to go for another literal in the decided literal list
+			break;
 	}//end of for for decide literal
 
 
 
-	if(literals_in_last_decision != NULL)
-		free(literals_in_last_decision);
+	//TODO: This is so bad ... need to figure out why this sentence is executed even if I have a return when the contradiction happens
+	//TODO: needs to find a way to clear the literals in last_decision
+//	if(literals_in_last_decision != NULL && num_last_decision_lit !=0)
+//		FREE(literals_in_last_decision);
 
-//	if(contradiction_flag == 1)
-//		return 0;
-//	else
+	if(contradiction_flag == 1)
+		return 0;
+	else
 		return 1 ;
 }
 

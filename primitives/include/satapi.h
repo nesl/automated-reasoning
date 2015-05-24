@@ -12,6 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* MACRO for testing null pointers in C*/
+#define FREE(ptr) do{ \
+    free((ptr));      \
+    (ptr) = NULL;     \
+  }while(0)
 
 
 /******************************************************************************
@@ -50,7 +55,8 @@ typedef struct{
 	unsigned long* list_of_watched_clauses;  // List of clause indices that contain this literal as a watched literal
 	unsigned long max_size_list_watched_clauses;
 
-	/** for the non-chronological backtracking UIP */
+	/** for the non-chronological backtracking UIP
+	 * the unit clause used for implying the (variable) is said to be the antecedent of this literal(variable)*/
 	Clause* antecedent;
 
 	unsigned long vsids_score; // for use in variable selection

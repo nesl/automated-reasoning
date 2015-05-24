@@ -18,7 +18,7 @@
 /* GLOBALS */
 BOOLEAN FLAG_CASE1_UNIT_RESOLUTION = 0;
 BOOLEAN FLAG_CASE2_UNIT_RESOLUTION = 0;
-BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 1;
+BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 0;  //TODO: set this to 1 in the final version
 
 
 /******************************************************************************
@@ -362,18 +362,18 @@ void free_sat_state(SatState* sat_state) {
  * Yet, the first decided literal must have 2 as its decision level
  ******************************************************************************/
 static BOOLEAN unit_resolution_case_1(SatState* sat_state){
-	//reset the flag
+	// This is called after decide literal
 		FLAG_CASE1_UNIT_RESOLUTION = 0;
 		// run the two literal watch based on the new decision
 		return two_literal_watch(sat_state);
 }
 
 static BOOLEAN unit_resolution_case_2(SatState* sat_state){
-
+	// this is called after adding an asserting clause
 	//reset the flag
 	FLAG_CASE2_UNIT_RESOLUTION = 0;
 	//TODO: // something has to be done with the new conflict clause
-	return 0;
+	return  two_literal_watch(sat_state);
 }
 
 static BOOLEAN unit_resolution_case_3(SatState* sat_state){
@@ -402,8 +402,6 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 			sat_state->current_decision_level = 1;
 		}
 	}
-	//reset the flag
-	FLAG_CASE3_UNIT_RESOLUTION = 0;
 	// now the decision list is updated with all unit literals
 	// run the two literal watch algorithm
 	if(sat_state->num_literals_in_decision == 0){

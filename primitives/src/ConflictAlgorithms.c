@@ -28,6 +28,9 @@ static void update_delta_with_gamma(SatState* sat_state){
 	add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L1);
 	add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L2);
 
+	// update the index of the new added clause
+	sat_state->delta[sat_state->num_clauses_in_delta].cindex = sat_state->num_clauses_in_delta + 1;
+
 	//update number of clauses in delta
 	sat_state->num_clauses_in_delta++;
 }

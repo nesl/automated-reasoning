@@ -96,9 +96,18 @@ int main(int argc, char* argv[]) {
   if (sat_state != NULL){
 	  // for debugging use example in text chapter 3
 #ifdef DEBUG
-	  decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
+	  /* For test of two literal watch */
+	  /* decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
 	  decide_literal(sat_state->variables[3].posLit, sat_state); // V4
 	  decide_literal(sat_state->variables[4].negLit, sat_state); //-V5
+	  */
+
+	  /*test for conflict driven clause */
+	  if(!decide_literal(sat_state->variables[0].posLit, sat_state)) undo_unit_resolution(sat_state); // A
+	  if(!decide_literal(sat_state->variables[1].posLit, sat_state)) undo_unit_resolution(sat_state); // B
+	  if(!decide_literal(sat_state->variables[2].posLit, sat_state)) undo_unit_resolution(sat_state); // C
+	  if(!decide_literal(sat_state->variables[3].posLit, sat_state)) undo_unit_resolution(sat_state); // X
+
 #endif
 
 
