@@ -12,7 +12,7 @@
 #include "ParseDIMACS.h"
 #include "LiteralWatch.h"
 #include "VSIDS.h"
-
+#include "ConflictAlgorithms.h"
 #define MALLOC_GROWTH_RATE 	   	2
 
 /* GLOBALS */
@@ -466,7 +466,7 @@ void undo_unit_resolution(SatState* sat_state) {
 
 	unsigned long num_reduced_decisions = 0;
 	// undo the set literals at the current decision level
-	for(unsigned long i = sat_state->num_literals_in_decision-1; i >= 0; i--){
+	for(unsigned long i = sat_state->num_literals_in_decision-1; i <= 0; i--){
 		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level){
 			sat_state->decisions[i]->decision_level = 1;
 			sat_state->decisions[i]->LitState = 0;
@@ -559,15 +559,7 @@ void undo_decide_literal(SatState* sat_state) {
  * be the same as the start level S, which is 1 (i.e., the level in
  * which no decision is made) 
  ******************************************************************************/
-static void add_clause_to_gamma(SatState* sat_state){
-	if(sat_state->num_clauses_in_gamma >= sat_state->max_size_list_gamma){
-		// needs to realloc the size
-		sat_state->max_size_list_gamma =(sat_state->num_clauses_in_gamma * MALLOC_GROWTH_RATE);
-		sat_state->gamma = (Clause*) realloc( sat_state->gamma, sizeof(Clause*) * (sat_state->max_size_list_gamma));
-	}
-	else
-		sat_state->gamma[sat_state->num_clauses_in_gamma++] = sat_state->alpha;
-}
+
 BOOLEAN add_asserting_clause(SatState* sat_state) {
 
   //TODO: Check the sanity if this
@@ -583,7 +575,7 @@ BOOLEAN add_asserting_clause(SatState* sat_state) {
 			asserting_level = sat_state->alpha.literals[i]->decision_level;
 	}
 
-
+	// update the gamma list (just for performance analysis)
 	add_clause_to_gamma(sat_state);
 
 	update_vsids_scores(sat_state);

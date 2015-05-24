@@ -2,7 +2,7 @@
  * VSIDS.c
  *
  *  Created on: May 22, 2015
- *      Author: salma
+ *      Author: matt
  */
 
 #include "VSIDS.h"

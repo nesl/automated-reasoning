@@ -35,8 +35,8 @@ typedef char BOOLEAN; //1 is true; 0 is false; u is unassigned
  * --Index of a literal must be of type "signed long"
  ******************************************************************************/
 //TODO: Check if there is any other way to do this forward declaration
-typedef struct Lit Lit;//forward declaration
-struct Lit{
+typedef struct Clause Clause;//forward declaration
+typedef struct{
 
 	signed long sindex;
 	BOOLEAN LitState;			  // whether it is set or not
@@ -50,11 +50,11 @@ struct Lit{
 	unsigned long* list_of_watched_clauses;  // List of clause indices that contain this literal as a watched literal
 	unsigned long max_size_list_watched_clauses;
 
-	/** for the non-chronological backtracking */
-	Lit* antecedent;
+	/** for the non-chronological backtracking UIP */
+	Clause* antecedent;
 
 	unsigned long vsids_score; // for use in variable selection
-};
+}Lit;
 
 
 /******************************************************************************
@@ -78,8 +78,8 @@ typedef struct {
  * --Each clause must maintain a field to decide whether the clause is subsumed in
  * the current setting (i.e., if any literal of the clause is asserted)
  ******************************************************************************/
-
-typedef struct {
+// changed the typedef for the forward declaration to Lit antecedent
+struct Clause{
 
   Lit ** literals;
   unsigned long cindex;
@@ -90,7 +90,7 @@ typedef struct {
   Lit* L1; //first literal
   Lit* L2; //second literal
 
-} Clause;
+};
 
 
 /******************************************************************************
@@ -118,6 +118,7 @@ typedef struct {
   unsigned long  num_variables_in_state; //n
 
   unsigned long max_size_list_gamma;
+  unsigned long max_size_list_delta; // needs to update sice of delta by adding the gamma clauses to it
 
   unsigned long current_decision_level;
 
@@ -159,6 +160,7 @@ BOOLEAN add_asserting_clause(SatState*);
 BOOLEAN at_assertion_level(SatState*);
 BOOLEAN at_start_level(SatState*);
 BOOLEAN conflict_exists(SatState*);
+
 
 #endif // SATAPI_H_
 

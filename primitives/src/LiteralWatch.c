@@ -15,24 +15,6 @@
 BOOLEAN literal_watched_initialized = 0;
 
 
-
-
-static void add_watching_clause(Clause* clause, Lit* lit){
-
-	//get clause index.
-	unsigned long index = clause->cindex;
-
-	if(lit->num_watched_clauses >= lit->max_size_list_watched_clauses){
-			// needs to realloc the size
-			lit->max_size_list_watched_clauses =(lit->num_watched_clauses * MALLOC_GROWTH_RATE);
-			lit->list_of_watched_clauses = (unsigned long*) realloc( lit->list_of_watched_clauses, sizeof(unsigned long) * lit->max_size_list_watched_clauses);
-	}
-
-	lit->list_of_watched_clauses[lit->num_watched_clauses] = index;
-
-	lit->num_watched_clauses ++;
-}
-
 static void intitialize_watching_clauses(SatState* sat_state){
 
 	for(unsigned long i =0; i< sat_state->num_clauses_in_delta; i++){
@@ -82,6 +64,26 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 		*capacity = cap;
 
 }
+
+/******************************************************************************
+add watching clause to the list of watching clauses over a literal
+******************************************************************************/
+void add_watching_clause(Clause* clause, Lit* lit){
+
+	//get clause index.
+	unsigned long index = clause->cindex;
+
+	if(lit->num_watched_clauses >= lit->max_size_list_watched_clauses){
+			// needs to realloc the size
+			lit->max_size_list_watched_clauses =(lit->num_watched_clauses * MALLOC_GROWTH_RATE);
+			lit->list_of_watched_clauses = (unsigned long*) realloc( lit->list_of_watched_clauses, sizeof(unsigned long) * lit->max_size_list_watched_clauses);
+	}
+
+	lit->list_of_watched_clauses[lit->num_watched_clauses] = index;
+
+	lit->num_watched_clauses ++;
+}
+
 
 
 /******************************************************************************
@@ -169,7 +171,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 					}
 					if(num_free_literals == 1){
 						//I have a unit clause take an implication
-						free_lit->antecedent = decided_literal; // remember the decision list is updated with the pending list so that's ok
+						free_lit->antecedent = wclause; // remember the decision list is updated with the pending list so that's ok
 						// the last free literal is the only free literal in this case
 						add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
 						continue; // go to the next clause

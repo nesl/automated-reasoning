@@ -10,6 +10,9 @@
 
 #include "satapi.h"
 
+void add_clause_to_gamma(SatState* sat_state);
+
+
 void chronological_backtracking(SatState* sat_state);
 
 void CDCL_non_chronological_backtracking(SatState* sat_state);

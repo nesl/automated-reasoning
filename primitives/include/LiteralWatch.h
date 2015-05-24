@@ -9,6 +9,8 @@
 
 #include "satapi.h"
 
+
+void add_watching_clause(Clause* clause, Lit* lit);
 BOOLEAN two_literal_watch(SatState* sat_state);
 
 
