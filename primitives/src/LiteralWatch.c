@@ -102,7 +102,6 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 		intitialize_watching_clauses(sat_state);
 
 	BOOLEAN contradiction_flag;
-	//Clause* conflict_clause = NULL;
 
 	//TODO: Due to recursion of pending list we may need to consider more than one decided literal then we need a list that captures all literals of last decision
 
@@ -170,7 +169,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 						}
 					}
 					if(num_free_literals == 1){
-						//I have a unit clause take an implication
+						//I have a unit clause take an implication and update the antecedent
 						free_lit->antecedent = wclause; // remember the decision list is updated with the pending list so that's ok
 						// the last free literal is the only free literal in this case
 						add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
@@ -181,8 +180,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 						//subsumed clause --> do nothing
 
 						// I have to check the other watched literal!?
-
-						Lit* the_other_watched_literal;
+						Lit* the_other_watched_literal = NULL;
 						if(resolved_literal->sindex == wclause->L1->sindex)
 							the_other_watched_literal = wclause->L2;
 						else if(resolved_literal->sindex == wclause->L2->sindex)
@@ -191,6 +189,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 						if(is_resolved_literal(the_other_watched_literal)){
 							// all literal of the clause are resolved --> contradiction
 							contradiction_flag = 1;
+							sat_state->conflict_clause = wclause;
 							if(pending_list!=NULL)
 								free(pending_list);
 

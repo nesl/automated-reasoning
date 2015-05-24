@@ -45,6 +45,8 @@ static int parseProblemLine(char* line, SatState* sat_state){
 				sat_state->num_clauses_in_delta = atoi(pch);
 				// allocate memory for m clauses
 				sat_state->delta =( (Clause *) malloc(sizeof(Clause) * sat_state->num_clauses_in_delta) );
+				// initialize the max_size_list_delta with the original number of clauses. This number will increase by adding the learnt clause
+				sat_state->max_size_list_delta = sat_state->num_clauses_in_delta;
 			}
 			countparameters++;
 		}
@@ -101,7 +103,7 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 #endif
 
 	// initialize memory of clause literals with one element and then increase the size by double if needed
-	int MIN_CAPACITY = 1;
+	unsigned long MIN_CAPACITY = 1;
 
 	clause->literals = (Lit**) malloc(sizeof(Lit*) * MIN_CAPACITY);
 
@@ -137,6 +139,7 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 
 
 	clause->num_literals_in_clause = countvariables;
+	clause->max_size_list_literals = MIN_CAPACITY;
 	clause->is_subsumed = 0;
 
 	// For the two literal watch // just initialize here

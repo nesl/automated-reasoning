@@ -81,9 +81,12 @@ typedef struct {
 // changed the typedef for the forward declaration to Lit antecedent
 struct Clause{
 
-  Lit ** literals;
   unsigned long cindex;
+
+  Lit ** literals;
   unsigned long num_literals_in_clause;
+  unsigned long max_size_list_literals;
+
   BOOLEAN is_subsumed;
 
   /** for the two literal watch data structure */
@@ -118,9 +121,11 @@ typedef struct {
   unsigned long  num_variables_in_state; //n
 
   unsigned long max_size_list_gamma;
-  unsigned long max_size_list_delta; // needs to update sice of delta by adding the gamma clauses to it
+  unsigned long max_size_list_delta; //TODO: (may need to remove this) needs to update size of delta by adding the gamma clauses to it
 
   unsigned long current_decision_level;
+
+  Clause* conflict_clause; // if contradiction happen at the current state then this clause is the cause of contradiction
 
 } SatState;
 

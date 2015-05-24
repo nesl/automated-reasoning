@@ -255,6 +255,8 @@ SatState* construct_sat_state(char* cnf_fname) {
   sat_state->num_literals_in_implications = 0;
   sat_state->num_variables_in_state = 0;
 
+  //sat_state->conflict_clause = (Clause*) malloc(sizeof(Clause));
+
 
   FILE* cnf_file = fopen(cnf_fname, "r");
   
@@ -322,6 +324,9 @@ void free_sat_state(SatState* sat_state) {
 		}
 	}
 	free(sat_state->gamma);
+
+	//TODO: needs deep cleaning of conflict clause
+	//free(sat_state->conflict_clause);
 
 	free(sat_state);
 }
@@ -566,16 +571,16 @@ BOOLEAN add_asserting_clause(SatState* sat_state) {
 	FLAG_CASE2_UNIT_RESOLUTION = 1;
 
 	//learn clause
-	CDCL_non_chronological_backtracking(sat_state);
+	CDCL_non_chronological_backtracking_first_UIP(sat_state); // will assign alpha
 
 	//check the asserting level of the asserting clause
-	unsigned long asserting_level = 0;
-	for(unsigned long i = 0; i < sat_state->alpha.num_literals_in_clause; i++){
-		if(asserting_level < sat_state->alpha.literals[i]->decision_level)
-			asserting_level = sat_state->alpha.literals[i]->decision_level;
-	}
+//	unsigned long asserting_level = 0;
+//	for(unsigned long i = 0; i < sat_state->alpha.num_literals_in_clause; i++){
+//		if(asserting_level < sat_state->alpha.literals[i]->decision_level)
+//			asserting_level = sat_state->alpha.literals[i]->decision_level;
+//	}
 
-	// update the gamma list (just for performance analysis)
+	// update the gamma list with the new alpha (just for performance analysis)
 	add_clause_to_gamma(sat_state);
 
 	update_vsids_scores(sat_state);

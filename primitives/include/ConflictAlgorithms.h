@@ -13,9 +13,9 @@
 void add_clause_to_gamma(SatState* sat_state);
 
 
-void chronological_backtracking(SatState* sat_state);
+//void chronological_backtracking(SatState* sat_state);
 
-void CDCL_non_chronological_backtracking(SatState* sat_state);
+void CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state);
 
 
 #endif /* CONFLICTALGORITHMS_H_ */
