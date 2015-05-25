@@ -59,10 +59,45 @@ int main(int argc, char* argv[]) {
 	
   //construct a sat state and then check satisfiability
   SatState* sat_state = sat_state_new(cnf_fname);
-  if(sat(sat_state)) printf("SAT\n");
-  else printf("UNSAT\n");
-  sat_state_free(sat_state);
 
+#ifdef DEBUG
+	  /* For test of two literal watch */
+//  sat_decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
+//  sat_decide_literal(sat_state->variables[3].posLit, sat_state); // V4
+//  sat_decide_literal(sat_state->variables[4].negLit, sat_state); //-V5
+
+
+	  /*test for conflict driven clause */
+	  if(sat_decide_literal(sat_state->variables[0].posLit, sat_state) != NULL) sat_undo_unit_resolution(sat_state); // A
+	  if(sat_decide_literal(sat_state->variables[1].posLit, sat_state) != NULL) sat_undo_unit_resolution(sat_state); // B
+	  if(sat_decide_literal(sat_state->variables[2].posLit, sat_state) != NULL) sat_undo_unit_resolution(sat_state); // C
+	  if(sat_decide_literal(sat_state->variables[3].posLit, sat_state) != NULL) sat_undo_unit_resolution(sat_state); // X
+
+#endif
+
+
+//	  if(sat(sat_state))
+//		  printf("SAT\n");
+//	  else
+//		  printf("UNSAT\n");
+
+
+
+#ifdef DEBUG
+//	  decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
+//	  decide_literal(sat_state->variables[3].posLit, sat_state); // V4
+//	  decide_literal(sat_state->variables[4].negLit, sat_state); //-V5
+
+	  for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
+		  printf("%ld\n",sat_state->decisions[i]->sindex);
+	  }
+#endif
+
+#ifdef DEBUG
+  printf("END OF SAT_STATE_CONSTRUCT");
+#endif
+
+  sat_state_free(sat_state);
   return 0;
 }
 

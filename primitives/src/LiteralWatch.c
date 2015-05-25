@@ -90,7 +90,6 @@ void add_watching_clause(Clause* clause, Lit* lit){
 The algorithm taken from the Class Notes for CS264A, UCLA
 
 ******************************************************************************/
-
 BOOLEAN two_literal_watch(SatState* sat_state){
 
 	// Once I entered here I must have elements in the decision array
