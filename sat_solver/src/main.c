@@ -1,109 +1,66 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "satapi.h"
-
+#include "sat_api.h"
 
 /******************************************************************************
  * SAT solver 
  ******************************************************************************/
 
-/******************************************************************************
- * Apart from the primitives in satapi.h, you should implement the following
- * function
- *
- * It returns some literal which is free in the current setting of sat_state  
- * If all literals are set, then it returns NULL
- ******************************************************************************/
+//returns a literal which is free in the current setting of sat state  
+//a NAIVE implementation no one would use in practice
+//you are free to modify this (no need though)
 Lit* get_free_literal(SatState* sat_state) {
-
-  //this is the place for heuristic and variable order
-  //for now just pick the first free literal encountered
-
-	Lit * max_lit = NULL;
-	unsigned long max_score = 0;
-
-	for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_state; vidx++)
-	{
-		Var cur_var = sat_state->variables[vidx];
-
-		Lit * cur_lit;
-
-		cur_lit = cur_var.posLit;
-
-		if (cur_lit->vsids_score > max_score)
-		{
-			if (is_free_literal(cur_lit))
-			{
-				max_score = cur_score;
-				max_lit = cur_lit;
-			}
-		}
-		else if (cur_lit->vsids_score == max_score)
-		{
-			if (is_free_literal(cur_lit))
-			{
-				// break ties with some randomization
-				if (rand() % 2) {
-					max_score = cur_score;
-					max_lit = cur_lit;
-				}
-			}
-		}
-
-		cur_lit = cur_var.negLit;
-
-		// ugly
-	}
-
-  return max_lit;
+  c2dSize var_count = sat_var_count(sat_state);
+  for(c2dSize i=0; i<var_count; i++) { //go over variables
+    Var* var  = sat_index2var(i+1,sat_state); //note index is i+1, not i
+    Lit* plit = sat_pos_literal(var);
+    Lit* nlit = sat_neg_literal(var);
+    if(!sat_implied_literal(plit) && !sat_implied_literal(nlit)) return plit;
+  }
+  return NULL; //all literals are implied
 }
 
-BOOLEAN sat_aux(SatState* sat_state) {
+//if sat state is shown to be satisfiable, it returns NULL
+//otherwise, a clause must be learned and it is returned
+Clause* sat_aux(SatState* sat_state) {
   Lit* lit = get_free_literal(sat_state);
-  if(lit==NULL) return 1; // all literals are implied
+  if(lit==NULL) return NULL; //all literals are implied
 
-  BOOLEAN ret = 0;
+  Clause* learned = sat_decide_literal(lit,sat_state);
+  if(learned==NULL) learned = sat_aux(sat_state);
+  sat_undo_decide_literal(sat_state);
 
-  if(decide_literal(lit,sat_state)) ret = sat_aux(sat_state);
-  undo_decide_literal(sat_state);
-
-  if(ret==0) { // there is a conflict
-    if(at_assertion_level(sat_state) && add_asserting_clause(sat_state)) 
-      return sat_aux(sat_state); // try again
-    else 
-      return 0; // backtrack (still conflict)
+  if(learned!=NULL) { //there is a conflict
+    if(sat_at_assertion_level(learned,sat_state)) {
+      learned = sat_assert_clause(learned,sat_state);
+      if(learned==NULL) return sat_aux(sat_state); //try again
+      else return learned; //new clause learned, backtrack
+    }
+    else return learned; //backtrack (still conflict)
   }
-  else return 1; // satisfiable
+  return NULL; //satisfiable
 }
 
 BOOLEAN sat(SatState* sat_state) {
   BOOLEAN ret = 0;
-  if(unit_resolution(sat_state)) ret = sat_aux(sat_state);
-  undo_unit_resolution(sat_state); // everything goes back to the initial state
+  if(sat_unit_resolution(sat_state)) ret = (sat_aux(sat_state)==NULL? 1: 0);
+  sat_undo_unit_resolution(sat_state); // everything goes back to the initial state
   return ret;
 }
 
-
-char USAGE_MSG[] = "Usage: ./sat -in_cnf <cnf_file>\n";
-
 int main(int argc, char* argv[]) {	
+  char USAGE_MSG[] = "Usage: ./sat -c <cnf_file>\n";
+  char* cnf_fname  = NULL;
 
-  char* cnf_fname = NULL;
-  if(argc==3 && strcmp("-in_cnf",argv[1])==0) 
-    cnf_fname = argv[2];
+  if(argc==3 && strcmp("-c",argv[1])==0) cnf_fname = argv[2];
   else {
     printf("%s",USAGE_MSG);
     exit(1);
   }
 	
-  // construct a sat state and then check satisfiability
-  SatState* sat_state = construct_sat_state(cnf_fname);
-  if (sat_state != NULL) return 1;
-//  if(sat(sat_state)) printf("SAT\n");
-//  else printf("UNSAT\n");
-//  free_sat_state(sat_state);
+  //construct a sat state and then check satisfiability
+  SatState* sat_state = sat_state_new(cnf_fname);
+  if(sat(sat_state)) printf("SAT\n");
+  else printf("UNSAT\n");
+  sat_state_free(sat_state);
 
   return 0;
 }
