@@ -134,8 +134,8 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 		Lit* decided_literal = literals_in_last_decision[i];
 		Lit* resolved_literal = get_resolved_lit(decided_literal, sat_state);
 
-		// Update clauses state based on the decided literal
-		sat_update_clauses_state(decided_literal);
+		//TODO: uncomment Update clauses state based on the decided literal
+		//sat_update_clauses_state(decided_literal);
 		//TODO: Enhance: we can only get the watched clauses that are not subsumed to speed it up
 
 		// Create pending literal list
@@ -164,7 +164,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 					// if unit (only one free)
 					unsigned long num_free_literals = 0;
 					for(unsigned long j = 0; j < wclause->num_literals_in_clause; j++){
-						if(!sat_implied_literal(wclause->literals[j])){
+						if(sat_implied_literal(wclause->literals[j]) ==  0){
 							num_free_literals++;
 							free_lit = wclause->literals[j];
 						}
@@ -242,7 +242,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 					}
 					else if(pending_lit->sindex >0){
 						pending_lit->LitValue = 1;
-						pending_lit->LitValue = 1;
+						pending_lit->LitState = 1;
 					}
 					pending_lit->decision_level = sat_state->current_decision_level;
 
