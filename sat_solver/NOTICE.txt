@@ -1,0 +1,3 @@
+GCC's compiler optimization breaks debugging support, so I turned it
+off (i.e., I set the flag to -O0  in the Makefile, that's oh-zero).
+Eventually it should be set set back to -O2!

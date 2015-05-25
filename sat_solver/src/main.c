@@ -18,9 +18,6 @@
  ******************************************************************************/
 Lit* get_free_literal(SatState* sat_state) {
 
-  //this is the place for heuristic and variable order
-  //for now just pick the first free literal encountered
-
 	Lit * max_lit = NULL;
 	unsigned long max_score = 0;
 
@@ -36,7 +33,7 @@ Lit* get_free_literal(SatState* sat_state) {
 		{
 			if (is_free_literal(cur_lit))
 			{
-				max_score = cur_score;
+				max_score = cur_lit->vsids_score;
 				max_lit = cur_lit;
 			}
 		}
@@ -46,7 +43,7 @@ Lit* get_free_literal(SatState* sat_state) {
 			{
 				// break ties with some randomization
 				if (rand() % 2) {
-					max_score = cur_score;
+					max_score = cur_lit->vsids_score;
 					max_lit = cur_lit;
 				}
 			}
@@ -54,7 +51,25 @@ Lit* get_free_literal(SatState* sat_state) {
 
 		cur_lit = cur_var.negLit;
 
-		// ugly
+		if (cur_lit->vsids_score > max_score)
+		{
+			if (is_free_literal(cur_lit))
+			{
+				max_score = cur_lit->vsids_score;
+				max_lit = cur_lit;
+			}
+		}
+		else if (cur_lit->vsids_score == max_score)
+		{
+			if (is_free_literal(cur_lit))
+			{
+				// break ties with some randomization
+				if (rand() % 2) {
+					max_score = cur_lit->vsids_score;
+					max_lit = cur_lit;
+				}
+			}
+		}
 	}
 
   return max_lit;
@@ -97,14 +112,28 @@ int main(int argc, char* argv[]) {
     printf("%s",USAGE_MSG);
     exit(1);
   }
-	
+
   // construct a sat state and then check satisfiability
   SatState* sat_state = construct_sat_state(cnf_fname);
-  if (sat_state != NULL) return 1;
-//  if(sat(sat_state)) printf("SAT\n");
-//  else printf("UNSAT\n");
-//  free_sat_state(sat_state);
+  if(sat(sat_state)) printf("SAT\n");
+  else printf("UNSAT\n");
 
+	printf("Hello.\n");
+
+	Lit * l = get_free_literal(sat_state);
+	printf("The sindex of l is %d\n", l->sindex);
+
+	for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_state; vidx++) {
+		printf("vidx = %d: index = %d\n", vidx, sat_state->variables[vidx].index);
+		printf("  posLit: ");
+		printf("    sindex = %d ", sat_state->variables[vidx].posLit->sindex);
+		printf("score  = %d\n", sat_state->variables[vidx].posLit->vsids_score);
+		printf("  negLit: ");
+		printf("    sindex = %d ", sat_state->variables[vidx].negLit->sindex);
+		printf("score = %d\n", sat_state->variables[vidx].negLit->vsids_score);
+	}
+
+  free_sat_state(sat_state);
   return 0;
 }
 
