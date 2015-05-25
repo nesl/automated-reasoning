@@ -1,0 +1,94 @@
+The c2D Compiler Package
+c2D version 1.00, May 24, 2015
+http://reasoning.cs.ucla.edu/c2D
+
+A compiler for converting CNF into Decision-DNNF using clause
+learning and component caching, which allows tractable operations such as model
+counting and clausal entailment. 
+
+FILES
+
+  bin/       This directory contains hgr2htree (see below), and also the 
+             executable compiled from the make command will be located in here.
+  include/   This directory contains header files.
+  lib/       This directory contains pre-compiled libraries needed to compile 
+             the c2D compiler (both Linux and MacOS X are supported).
+  src/       This directory includes the source for the compilation/counting 
+             algorithm.
+  Makefile   A Makefile.
+  LICENSE    This file includes the license for the c2D compiler.
+  README     This is this file.
+
+COMPILATION
+
+A simple Makefile is provided for compiling the c2D compiler, which can be
+compiled by simply running the "make" command.
+
+NOTES
+
+The user interface of this version is similar to earlier versions. To get help
+about various options, you can run the following on the command line:
+
+  $ ./bin/c2D --help
+  
+There are five main differences from the previous version of the compiler:
+
+(1) This version can be used as a pure (weighted) model counter. That is, there is
+an option (--model_counter or -W), which counts the models of the input CNF,
+without generating a compilation of it. To use it for weighted model counting,
+weights of literals should be provided in the input CNF file using a line like
+this:
+
+ c weights 17 23 .3 7 5.5 ...
+
+That is, the line starts with 'c weights', followed by the weights of
+literals 1, -1, 2, -2, ... , n, -n, where n is the number of variables in the
+input CNF (which is given on the line "p cnf <var count> <clause count>").
+(IN THE PROJECT WE ASSUME THAT WEIGHTS ARE ALWAYS 1, SO NO NEED FOR THE ABOVE LINE)
+
+Note that the model counting with compilation uses "bignum", while straight
+(weighted) model counting uses "double".
+
+(2) This version comes with the source code for the main compilation/model
+counting algorithm, which uses a new formal framework that is described in the paper: 
+
+  "A Top-Down Compiler for Sentential Decision Diagrams"
+  by Umut Oztok and Adnan Darwiche
+  To appear in Proceedings of the 24th International Joint Conference on
+  Artificial Intelligence, 2015
+
+The result of c2D is indeed a Decision-DNNF, which can be easily converted into
+a Decision-SDD (in linear time).
+
+(3) This version works on a vtree, instead of a dtree.
+
+(4) This version runs on 64-bit machines, instead of 32-bit machines.
+
+(5) The generation of vtrees using hypergraph partitioning invokes a separate
+executable called hgr2htree, which must be kept in the same directory as the
+compiler. However, the process of invoking hgr2htree is invisible to the user so
+the compiler can be used exactly the same way as before.
+
+ABOUT hgr2htree
+
+Generating vtrees using hypergraph partitioning (i.e., --vtree_method or -m is 0
+or 1) is based on the hmetis program, for which the only available library is
+32-bit.  Hence, hgr2htree is a 32-bit executable. In case your 64-bit platform
+does not have the necessary 32-bit libraries to run hgr2htree installed, you
+have to install them separately. The packages needed are system dependent; here
+are minimum requirements for some popular Linux distributions:
+
+====
+Packages and installation for Ubuntu or Debian:
+
+  libc6-i386    (sudo apt-get install libc6-i386)
+  lib32stdc++6  (sudo apt-get install lib32stdc++6)
+
+====
+Packages and installation for RedHat:
+
+  glibc.i686      (yum install glibc.i686)
+  libstdc++.i686  (yum install libstdc++.i686)
+
+Finally, hgr2htree must be located under the same directory with the c2D
+compiler.
