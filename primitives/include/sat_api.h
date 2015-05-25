@@ -28,6 +28,19 @@
  * state equals to the clause's assertion level.
  ******************************************************************************/
 
+
+
+/******************************************************************************
+ * MACROS
+ ******************************************************************************/
+
+/* Testing null pointers in C*/
+#define FREE(ptr) do{ \
+    free((ptr));      \
+    (ptr) = NULL;     \
+  }while(0)
+
+
 /******************************************************************************
  * typedefs
  ******************************************************************************/
@@ -39,26 +52,37 @@ typedef signed long c2dLiteral; //for literals
 typedef double c2dWmc;          //for (weighted) model count
 
 /******************************************************************************
- * Basic structures
+ * Forward declarations
  ******************************************************************************/
+typedef struct var Var;
+typedef struct literal Lit;
+typedef struct clause Clause;
+
+
 
 /******************************************************************************
+ * Basic structures
+ ******************************************************************************/
+/******************************************************************************
  * Variables:
- * --You must represent variables using the following struct 
+ * --You must represent variables using the following struct
  * --Variable index must start at 1, and is no greater than the number of cnf variables
  * --Index of a variable must be of type "c2dSize"
  * --The field "mark" below and its related functions should not be changed
  ******************************************************************************/
 
-typedef struct var {
+struct var {
+	c2dSize index; 							//variable index
+	Lit* posLit; 							// Keep track of the variable positive literal
+	Lit* negLit; 							// keep track of the variable negative literal
+	Clause** list_clause_of_variables;  		//	a list of clauses that have the variable inside it
+	unsigned long num_of_clauses_of_variables;
+	unsigned long max_size_list_of_clause_of_variables;
 
-  // ... TO DO ...
+	BOOLEAN mark; 							//THIS FIELD MUST STAY AS IS
 
-  //c2dSize index; variable index (you can change the variable name as you wish)
-  
-  BOOLEAN mark; //THIS FIELD MUST STAY AS IS
+};
 
-} Var;
 
 /******************************************************************************
  * Literals:
@@ -68,13 +92,27 @@ typedef struct var {
  * --Index of a literal must be of type "c2dLiteral"
  ******************************************************************************/
 
-typedef struct literal {
+struct literal {
+	c2dLiteral sindex;									// literal index
+	BOOLEAN LitState;			  						// whether it is set or not
+	unsigned long decision_level; 						// if it is decided or implied what is the level of the literal in this setting
+	BOOLEAN LitValue;									// whether it has value true, false, or free(not set)
+	Var* variable;										// pointer the variable of the literal
 
-  // ... TO DO ...
-  
-  //c2dLiteral index; literal index (you can change the variable name as you wish)
+	/** for the two literal watch data structure */
+	unsigned long* list_of_watched_clauses;  			// List of clause indices that contain this literal as a watched literal
+	unsigned long num_watched_clauses;
+	unsigned long max_size_list_watched_clauses;
 
-} Lit;
+	/* for the non-chronological backtracking UIP */
+	// the unit clause used for implying the (variable) is said to be the antecedent of this literal(variable)
+	Clause* antecedent;									// antecedent clause
+
+	/** For variable order algorithm VSIDS*/
+	unsigned long vsids_score; 							// for use in variable selection
+
+};
+
 
 /******************************************************************************
  * Clauses: 
@@ -86,16 +124,23 @@ typedef struct literal {
  * --The field "mark" below and its related functions should not be changed
  ******************************************************************************/
 
-typedef struct clause {
+struct clause {
 
-  // ... TO DO ...
-  
-  //c2dSize index;  clause index   (you can change the variable name as you wish)
-  //Lit** literals; literal array  (you can change the variable name as you wish)
-  
-  BOOLEAN mark; //THIS FIELD MUST STAY AS IS
+	c2dSize cindex;  						//clause index
 
-} Clause;
+  	Lit** literals; 						//literal array
+  	unsigned long num_literals_in_clause;
+	unsigned long max_size_list_literals;
+
+	BOOLEAN is_subsumed;
+
+	/** For the two literal watch data structure. The two literals that the clause is watching*/
+	Lit* L1; //first literal
+	Lit* L2; //second literal
+
+	BOOLEAN mark; //THIS FIELD MUST STAY AS IS
+
+};
 
 /******************************************************************************
  * SatState: 
@@ -105,7 +150,30 @@ typedef struct clause {
 
 typedef struct sat_state_t {
 
-  // ... TO DO ...
+	  Clause* delta;
+	  Clause* gamma;
+	  Lit** decisions;
+	  Lit** implications;
+	  Clause* alpha;
+
+	  // Variables in the problem space and their positive and negative literals.
+	  // keep them here now because I don't know where else to allocate them
+	  Var* variables; 															//Array of variables
+
+	  unsigned long  num_clauses_in_delta;  // m + added any new clauses
+	  unsigned long  num_clauses_in_gamma;
+	  unsigned long  num_literals_in_decision;
+	  unsigned long  num_literals_in_implications;
+	  unsigned long  num_variables_in_cnf; //n
+	  unsigned long  num_clauses_in_cnf;
+
+	  unsigned long max_size_list_gamma;
+	  unsigned long max_size_list_delta; 	//TODO: (may need to remove this) needs to update size of delta by adding the gamma clauses to it
+
+	  unsigned long current_decision_level;
+
+	  Clause* conflict_clause; // if contradiction happen at the current state then this clause is the cause of contradiction
+
 
 } SatState;
 
@@ -157,6 +225,10 @@ Clause* sat_clause_of_var(c2dSize index, const Var* var);
 /******************************************************************************
  * Literals 
  ******************************************************************************/
+//Added API: returns 1 if the literal is asserted in the current context, 0 otherwise
+BOOLEAN sat_is_asserted_literal(Lit* lit);
+//Added API returns 1 is the literal is resolved in the current context, 0 otherwise
+BOOLEAN sat_is_resolved_literal(Lit* lit);
 
 //returns a literal structure for the corresponding index
 Lit* sat_index2literal(c2dLiteral index, const SatState* sat_state);
@@ -213,6 +285,12 @@ c2dSize sat_learned_clause_count(const SatState* sat_state);
 //this function is called on a clause returned by sat_decide_literal() or sat_assert_clause()
 //moreover, it should be called only if sat_at_assertion_level() succeeds
 Clause* sat_assert_clause(Clause* clause, SatState* sat_state);
+
+//Added API: Update the state of the clause if one of its literals is asserted
+void sat_update_clauses_state(Lit* lit);
+
+//Added API: Undo the state of the clause at backtracking when we do undo unit resolution
+void sat_undo_clauses_state(Lit* lit);
 
 /******************************************************************************
  * SatState
