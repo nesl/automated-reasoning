@@ -124,7 +124,29 @@ int main(int argc, char* argv[]) {
 	printf("The sindex of l is %d\n", l->sindex);
 
 	for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_state; vidx++) {
-		printf("vidx = %d: index = %d\n", vidx, sat_state->variables[vidx].index);
+		printf("index = %d\n", sat_state->variables[vidx].index);
+		printf("  posLit: ");
+		printf("    sindex = %d ", sat_state->variables[vidx].posLit->sindex);
+		printf("score  = %d\n", sat_state->variables[vidx].posLit->vsids_score);
+		printf("  negLit: ");
+		printf("    sindex = %d ", sat_state->variables[vidx].negLit->sindex);
+		printf("score = %d\n", sat_state->variables[vidx].negLit->vsids_score);
+	}
+
+	Clause newalpha;
+	newalpha.literals = malloc(sizeof(Lit *) * 3);
+	newalpha.num_literals_in_clause = 3;
+	newalpha.literals[0] = index2varp(4, sat_state)->negLit;
+	newalpha.literals[1] = index2varp(10, sat_state)->posLit;
+	newalpha.literals[2] = index2varp(8, sat_state)->negLit;
+	sat_state->alpha = newalpha;
+	update_vsids_scores(sat_state);
+
+	l = get_free_literal(sat_state);
+	printf("The sindex of l is %d\n", l->sindex);
+
+	for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_state; vidx++) {
+		printf("index = %d\n", sat_state->variables[vidx].index);
 		printf("  posLit: ");
 		printf("    sindex = %d ", sat_state->variables[vidx].posLit->sindex);
 		printf("score  = %d\n", sat_state->variables[vidx].posLit->vsids_score);
