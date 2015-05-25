@@ -11,9 +11,8 @@ OBJS=$(SRC:.c=.o)
 
 HEADERS = include/satapi.h include/ParseDIMACS.h include/LiteralWatch.h include/VSIDS.h include/ConflictAlgorithms.h
 
-#For now don't build as a static lib
-#sat: $(OBJS)
-#	$(AR) $(AR_FLAGS) $(LIB_FILE) $(OBJS)
+sat: $(OBJS)
+	$(AR) $(AR_FLAGS) $(LIB_FILE) $(OBJS)
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -21,7 +20,3 @@ HEADERS = include/satapi.h include/ParseDIMACS.h include/LiteralWatch.h include/
 clean:
 	rm -f $(OBJS) $(LIB_FILE) sat
 
-
-EXEC_FILE = sat 
-sat: $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(EXEC_FILE)

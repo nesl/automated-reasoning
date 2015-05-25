@@ -41,7 +41,7 @@ BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 0;  //TODO: set this to 1 in the final vers
  ******************************************************************************/
 Var* index2varp(unsigned long i, SatState* sat_state) {
 
-  return &sat_state->variables[i];
+  return &sat_state->variables[i - 1];
 }
 
 

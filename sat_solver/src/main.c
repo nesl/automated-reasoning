@@ -134,11 +134,12 @@ int main(int argc, char* argv[]) {
 	}
 
 	Clause newalpha;
-	newalpha.literals = malloc(sizeof(Lit *) * 3);
-	newalpha.num_literals_in_clause = 3;
+	newalpha.literals = malloc(sizeof(Lit *) * 4);
+	newalpha.num_literals_in_clause = 4;
 	newalpha.literals[0] = index2varp(4, sat_state)->negLit;
 	newalpha.literals[1] = index2varp(10, sat_state)->posLit;
 	newalpha.literals[2] = index2varp(8, sat_state)->negLit;
+	newalpha.literals[3] = index2varp(3, sat_state)->posLit;
 	sat_state->alpha = newalpha;
 	update_vsids_scores(sat_state);
 

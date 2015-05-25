@@ -26,7 +26,7 @@ void update_vsids_scores (SatState * sat_state)
 {
 	printf("Updating!\n");
 
-	if (rand() % 4) // very rough 25% probability
+	if (rand() % 4 == 0) // rough 25% probability
 	{
 		// divide all the "counters" by a constant
 		for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_state; vidx++)
@@ -34,8 +34,8 @@ void update_vsids_scores (SatState * sat_state)
 			Var cur_var = sat_state->variables[vidx];
 			Lit * pos = cur_var.posLit;
 			Lit * neg = cur_var.negLit;
-			pos->vsids_score = pos->vsids_score << 2;
-			neg->vsids_score = neg->vsids_score << 2;
+			pos->vsids_score = pos->vsids_score >> 1;
+			neg->vsids_score = neg->vsids_score >> 1;
 			// need to test to determine a magic number by which to decrement
 		}
 	}
