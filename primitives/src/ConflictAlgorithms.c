@@ -9,6 +9,8 @@
 #include "LiteralWatch.h"
 #define MALLOC_GROWTH_RATE 	   	2
 
+
+
 static void update_delta_with_gamma(SatState* sat_state){
 	//TODO: Do I really need to do this. I just need to update the watching clause lists for the literals. Keep this for now but check later
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
@@ -63,24 +65,86 @@ static void add_literal_to_clause(Lit* lit, Clause* clause){
 
 
 // Resolution between two clauses
-static void resolution(Clause* w1, Clause* w2, Clause* wreturn){
-	BOOLEAN flag_dont_add_i;
-	for (unsigned long i =0; i < w1->num_literals_in_clause; i++){
-		flag_dont_add_i = 0;
-		for(unsigned long j =0; j<w2->num_literals_in_clause; j++){
-			//check the variable that is pos_lit in w1 and neg_lit in the w2 or vice versa --> then this is the variable you resolve on
-			if((abs(w1->literals[i]->sindex) == w2->literals[j]->sindex)   ||  (w1->literals[i]->sindex == abs(w2->literals[j]->sindex)) ){
-				flag_dont_add_i = 1;
-				continue;
-			}
-			else
-				add_literal_to_clause(w2->literals[j], wreturn);
-		}
-		if(!flag_dont_add_i)
-			add_literal_to_clause(w1->literals[i], wreturn);
+static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
 
-	}
+//	Var* resolvent_var;
+//
+//	// At the beginning union alpha_l and wl_1 in wl and then remove unnecessary literals
+//
+//	for(unsigned long i =0 ; i< alpha_l->num_literals_in_clause; i++){
+//		Lit* alit = alpha_l->literals[i];
+//		for(unsigned long j = 0; j< wl_1->num_literals_in_clause; j++){
+//			Lit* wlit = wl_1->literals[j];
+//			//check if they are of opposite sign
+//			if(sat_literal_var(alit)->index == sat_literal_var(wlit)->index){
+//				if((alit->sindex > 0 && wlit->sindex < 0) || (alit->sindex < 0 && wlit->sindex > 0)){
+//
+//				}
+//			}
+//		}
+//	}
+
+
+//	BOOLEAN flag_dont_add_alit;
+//
+//	Clause*	big;
+//	Clause*	small;
+//
+//	if(alpha_l->num_literals_in_clause >= wl_1->num_literals_in_clause){
+//		big = alpha_l;
+//		small = wl_1;
+//	}
+//	else{
+//		big = wl_1;
+//		small = alpha_l;
+//	}
+//
+//
+//	for (unsigned long i =0; i < big->num_literals_in_clause; i++){
+//		flag_dont_add_alit = 0;
+//		Lit* alit = big->literals[i];
+//		for(unsigned long j =0; j<small->num_literals_in_clause; j++){
+//			Lit* wlit = small->literals[j];
+//
+//			//if same variable check if they are the same sign and index then do nothing (alit will be added by the flag later)
+//			if(sat_literal_var(alit)->index == sat_literal_var(wlit)->index){
+//				if((alit->sindex > 0 && wlit->sindex > 0)   || (alit->sindex < 0 && wlit->sindex < 0)){
+//					continue;
+//				}
+//
+//				// if they are of different signs then this literal is removed -- continue
+//				if((alit->sindex > 0 && wlit->sindex < 0)   || (alit->sindex < 0 && wlit->sindex > 0)){
+//					flag_dont_add_alit = 1;
+//				}
+//
+//			}
+//
+//		}
+//		if(!flag_dont_add_alit){
+//			add_literal_to_clause(alpha_l->literals[i], wl);
+//		}
+//
+//
+//	}
 }
+
+
+static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
+
+	 wl_1->cindex = conflict_clause->cindex;
+	 wl_1->is_subsumed = conflict_clause->is_subsumed;
+	 wl_1->mark = conflict_clause->mark;
+	 wl_1->L1 = conflict_clause->L1;
+	 wl_1->L2 = conflict_clause->L2;
+	 wl_1->max_size_list_literals = conflict_clause->max_size_list_literals;
+	 wl_1->num_literals_in_clause = conflict_clause->num_literals_in_clause;
+
+	 for(unsigned long i =0; i< conflict_clause->num_literals_in_clause; i++){
+		wl_1->literals[i] = conflict_clause->literals[i];
+	 }
+
+}
+
 
 /******************************************************************************
 	First UIP algorithm for the non-chronological backtracking using the
@@ -89,22 +153,37 @@ static void resolution(Clause* w1, Clause* w2, Clause* wreturn){
 ******************************************************************************/
 Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 
-	// initially the learning clause (wl) is the conflict clause
-	Clause* wl = sat_state->conflict_clause;
+	// initially the learning clause (wl) and (wl-1)
+	Clause* wl = (Clause*) malloc(sizeof(Clause));
+	wl->literals = (Lit**) malloc(sizeof(Lit*));
+	wl->is_subsumed = 0;
+	wl->max_size_list_literals = 1;
+	wl->num_literals_in_clause = 0;
+
+
+
+	Clause* wl_1 = (Clause*) malloc(sizeof(Clause));
+	wl_1->literals = (Lit**) malloc(sizeof(Lit*) * (sat_state->conflict_clause->num_literals_in_clause)); // because at the beginning wl-1 is copied with conflict clause
+
+	//initially wl_1 = conflict clause //deep copy
+	initialize_learning_clause(wl_1, sat_state->conflict_clause);
 
 	//fixed point
 	BOOLEAN fixed_point_achieved = 0;
 
 	while(fixed_point_achieved == 0){
 		Clause* alpha_l = NULL;
-		for(unsigned long i=0; i< wl->num_literals_in_clause; i++){
-			Lit* lit = wl->literals[i];
+		for(unsigned long i=0; i< wl_1->num_literals_in_clause; i++){
+			Lit* lit = wl_1->literals[i];
 			if(lit->decision_level == sat_state->current_decision_level){
-				alpha_l = lit->antecedent;
+				alpha_l = sat_literal_var(lit)->antecedent;
 				break; // break for
 			}
 		}
-		resolution(alpha_l, wl, wl);
+
+		// resolve the conflict clause with the asserted variable antecedent and update the conflict clause (wl)
+		// for the next loop
+		resolution(alpha_l, wl_1, wl);
 
 		//check the breaking condition of fixed point
 		unsigned long count_asserting_literals = 0;
@@ -116,6 +195,15 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		}
 		if(count_asserting_literals == 1) // is indeed an asserting clause // only one literal at the current decision level
 			fixed_point_achieved = 1;
+		else{
+			//switch the pointers
+			//wl now will be wl_1 and wl values are freed but to keep its space we just point to the space of wl_1 and freed it
+			Clause* tmp = wl_1;
+			wl_1 = wl;
+			wl = tmp;
+			wl->max_size_list_literals = 1;
+			wl->num_literals_in_clause = 0;
+		}
 	}
 
 	sat_state->alpha = wl;

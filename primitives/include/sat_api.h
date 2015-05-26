@@ -79,6 +79,10 @@ struct var {
 	unsigned long num_of_clauses_of_variables;
 	unsigned long max_size_list_of_clause_of_variables;
 
+	/* for the non-chronological backtracking UIP */
+	// the unit clause used for implying the (variable) is said to be the antecedent of this literal(variable)
+	Clause* antecedent;									// antecedent clause
+
 	BOOLEAN mark; 							//THIS FIELD MUST STAY AS IS
 
 };
@@ -104,9 +108,6 @@ struct literal {
 	unsigned long num_watched_clauses;
 	unsigned long max_size_list_watched_clauses;
 
-	/* for the non-chronological backtracking UIP */
-	// the unit clause used for implying the (variable) is said to be the antecedent of this literal(variable)
-	Clause* antecedent;									// antecedent clause
 
 	/** For variable order algorithm VSIDS*/
 	unsigned long vsids_score; 							// for use in variable selection

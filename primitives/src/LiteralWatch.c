@@ -171,7 +171,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 					}
 					if(num_free_literals == 1){
 						//I have a unit clause take an implication and update the antecedent
-						free_lit->antecedent = wclause; // remember the decision list is updated with the pending list so that's ok
+						sat_literal_var(free_lit)->antecedent = wclause;  // remember the decision list is updated with the pending list so that's ok
 						// the last free literal is the only free literal in this case
 						add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
 						continue; // go to the next clause
@@ -205,7 +205,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 						}
 						else if(sat_is_asserted_literal(the_other_watched_literal)){
 							// we do nothing since this clause is subsumed
-
+							wclause->is_subsumed = 1;
 							contradiction_flag = 0; // just checking  if I have to reassign the value in order to avoid the compilation optimization
 //							if(pending_list!=NULL) // I can't do this because in the next loop pending list is freed and I can't assign it!!!
 //								free(pending_list);

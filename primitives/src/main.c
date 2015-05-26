@@ -59,7 +59,9 @@ int main(int argc, char* argv[]) {
 	
   //construct a sat state and then check satisfiability
   SatState* sat_state = sat_state_new(cnf_fname);
-
+#ifdef DEBUG
+  printf("END OF SAT_STATE_CONSTRUCT");
+#endif
 #ifdef DEBUG
 	  /* For test of two literal watch */
 //  sat_decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
@@ -106,7 +108,7 @@ int main(int argc, char* argv[]) {
 #endif
 
 #ifdef DEBUG
-  printf("END OF SAT_STATE_CONSTRUCT");
+  printf("END OF sat\n");
 #endif
 
   sat_state_free(sat_state);
