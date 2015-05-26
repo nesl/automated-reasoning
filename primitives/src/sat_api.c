@@ -402,58 +402,47 @@ SatState* sat_state_new(const char* file_name) {
 
 //frees the SatState
 void sat_state_free(SatState* sat_state) {
-//TODO: Need to check this again to deep clean everything
-	//deep cleaning of variables and implications
-	#ifdef DEBUG
-		printf("number of variables in sat_state %ld\n",sat_state->num_variables_in_cnf );
-	#endif
-		for(unsigned long i = 0; i<sat_state->num_variables_in_cnf; i++){
-			free(sat_state->variables[i].negLit->list_of_watched_clauses);
-			free(sat_state->variables[i].posLit->list_of_watched_clauses);
-		//	free(sat_state->implications[i]->list_of_watched_clauses); // this causes segmentation fault!
-		}
-		free(sat_state->variables);
-		free(sat_state->implications); // this does not!
 
+	// all three of these are guaranteed to be allocated
+	// based on the implementation of sat_state_new()
+	FREE(sat_state->delta);
+	FREE(sat_state->gamma);
+	FREE(sat_state->alpha);
 
-	//deep cleaning of decisions
-		for(unsigned long i = 0; i<sat_state->num_literals_in_decision; i++){
-			free(sat_state->decisions[i]->list_of_watched_clauses);
-		}
-		free(sat_state->decisions);
+	// clean up the variables
+	for(unsigned long vidx = 0; vidx < sat_state->num_variables_in_cnf; vidx++) {
+		variable_cleanup(sat_state->variables + vidx);
+	}
 
+	// free the variables
+	FREE(sat_state->variables);
+}
 
-	//deep cleaning of delta
-		for(unsigned long i =0; i<sat_state->num_clauses_in_delta; i++){
-			free(sat_state->delta[i].L1->list_of_watched_clauses);
-			free(sat_state->delta[i].L2->list_of_watched_clauses);
-			free(sat_state->delta[i].L1);
-			free(sat_state->delta[i].L2);
-			for(unsigned long j=0; j<sat_state->delta[i].num_literals_in_clause; j++){
-				free(sat_state->delta[i].literals[j]->list_of_watched_clauses);
-				free(sat_state->delta[i].literals[j]);
-			}
-		}
-		free(sat_state->delta);
+// void clause_cleanup (Clause * clause) {
+// 	// can ignore the literals variable
+// 	// as literals exist outside clauses
+// 
+// 	// can ignore the L1 and L2 pointers for the same reason
+// 
+// 	// right now, this function should do nothing!
+// }
 
+// FREEs everything within a variable, but not the variable itself
+void variable_cleanup (Var * variable) {
+	// right now the only allocated objects within a variable are
+	// the literals to which it points:
+	literal_free(variable->posLit);
+	literal_free(variable->negLit);
+}
 
-	//deep cleaning of gamma
-		for(unsigned long i =0; i<sat_state->num_clauses_in_gamma; i++){
-			free(sat_state->gamma[i].L1->list_of_watched_clauses);
-			free(sat_state->gamma[i].L2->list_of_watched_clauses);
-			free(sat_state->gamma[i].L1);
-			free(sat_state->delta[i].L2);
-			for(unsigned long j=0; j<sat_state->gamma[i].num_literals_in_clause; j++){
-				free(sat_state->gamma[i].literals[j]->list_of_watched_clauses);
-				free(sat_state->gamma[i].literals[j]);
-			}
-		}
-		free(sat_state->gamma);
+void literal_free (Lit * literal) {
+	FREE(literal->list_of_watched_clauses);
 
-		//TODO: needs deep cleaning of conflict clause
-		//free(sat_state->conflict_clause);
+	// no need to free the antecedent clause though,
+	// as it may exist outside this literal
+	// (either in delta, gamma, alpha, or conflict_clause)
 
-		free(sat_state);
+	FREE(literal);
 }
 
 /******************************************************************************

@@ -302,6 +302,9 @@ SatState* sat_state_new(const char* file_name);
 //frees the SatState
 void sat_state_free(SatState* sat_state);
 
+void variable_cleanup (Var * variable);
+void literal_free (Lit * literal);
+
 //applies unit resolution to the cnf of sat state
 //returns 1 if unit resolution succeeds, 0 if it finds a contradiction
 BOOLEAN sat_unit_resolution(SatState* sat_state);
