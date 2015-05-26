@@ -190,6 +190,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 						if(sat_is_resolved_literal(the_other_watched_literal)){
 							// all literal of the clause are resolved --> contradiction
 							contradiction_flag = 1;
+							printf(" Contradiction happens\n");
 							sat_state->conflict_clause = wclause;
 							//TODO: why this cause double free --- > where should I free it!!
 //							if(pending_list != NULL && num_pending_lit != 0)

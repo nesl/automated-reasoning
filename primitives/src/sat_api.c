@@ -233,9 +233,14 @@ Clause* sat_decide_literal(Lit* lit, SatState* sat_state) {
 
 	FLAG_CASE1_UNIT_RESOLUTION = 1;
 
-	sat_unit_resolution(sat_state);
+	BOOLEAN success = sat_unit_resolution(sat_state);
 
-	return sat_state->alpha;
+	if(!success){
+		Clause* learnt  = CDCL_non_chronological_backtracking_first_UIP(sat_state);
+		return learnt;
+	}
+	else
+		return NULL;
 }
 
 //undoes the last literal decision and the corresponding implications obtained by unit resolution
@@ -298,14 +303,17 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	FLAG_CASE2_UNIT_RESOLUTION = 1;
 
 	//learn clause
-	CDCL_non_chronological_backtracking_first_UIP(sat_state); // will assign alpha
+	//CDCL_non_chronological_backtracking_first_UIP(sat_state); // will assign alpha
 
 	// update the gamma list with the new alpha (just for performance analysis)
 	add_clause_to_gamma(sat_state);
 
 	update_vsids_scores(sat_state);
 
-	sat_unit_resolution(sat_state);
+	BOOLEAN success = sat_unit_resolution(sat_state);
+
+	if(!success)
+		CDCL_non_chronological_backtracking_first_UIP(sat_state);
 
 	return sat_state->alpha;
 }
@@ -364,7 +372,6 @@ SatState* sat_state_new(const char* file_name) {
 
   sat_state->gamma = (Clause *) malloc(sizeof(Clause));
   sat_state->alpha = (Clause *) malloc(sizeof(Clause));
-  sat_state->conflict_clause = (Clause*) malloc(sizeof(Clause));
 
   sat_state->current_decision_level = 1; // this is by description
   sat_state->num_clauses_in_delta = 0;

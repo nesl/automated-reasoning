@@ -36,7 +36,7 @@
 
 /* Testing null pointers in C*/
 #define FREE(ptr) do{ \
-    free((ptr));      \
+    	free((ptr));  \
     (ptr) = NULL;     \
   }while(0)
 

@@ -68,10 +68,22 @@ int main(int argc, char* argv[]) {
 
 
 	  /*test for conflict driven clause */
-	  if(sat_decide_literal(sat_state->variables[0].posLit, sat_state) != NULL) sat_undo_unit_resolution(sat_state); // A
-	  if(sat_decide_literal(sat_state->variables[1].posLit, sat_state) != NULL) sat_undo_unit_resolution(sat_state); // B
-	  if(sat_decide_literal(sat_state->variables[2].posLit, sat_state) != NULL) sat_undo_unit_resolution(sat_state); // C
-	  if(sat_decide_literal(sat_state->variables[3].posLit, sat_state) != NULL) sat_undo_unit_resolution(sat_state); // X
+  	  Clause* learned = sat_decide_literal(sat_state->variables[0].posLit, sat_state);  // A
+  	  if(learned == NULL)
+  		  learned = sat_decide_literal(sat_state->variables[1].posLit, sat_state); //B
+
+  	  if(learned == NULL)
+  		  learned = sat_decide_literal(sat_state->variables[2].posLit, sat_state); //C
+
+  	  if(learned == NULL)
+  		  learned = sat_decide_literal(sat_state->variables[3].posLit, sat_state); //X
+
+  	  if(learned != NULL){
+		  sat_undo_decide_literal(sat_state);
+		  if(sat_at_assertion_level(learned,sat_state)) {
+		        learned = sat_assert_clause(learned,sat_state);
+		  }
+	  }
 
 #endif
 

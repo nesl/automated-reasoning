@@ -65,7 +65,7 @@ static void add_literal_to_clause(Lit* lit, Clause* clause){
 // Resolution between two clauses
 static void resolution(Clause* w1, Clause* w2, Clause* wreturn){
 	BOOLEAN flag_dont_add_i;
-	for (unsigned long i =0; i<w1->num_literals_in_clause; i++){
+	for (unsigned long i =0; i < w1->num_literals_in_clause; i++){
 		flag_dont_add_i = 0;
 		for(unsigned long j =0; j<w2->num_literals_in_clause; j++){
 			//check the variable that is pos_lit in w1 and neg_lit in the w2 or vice versa --> then this is the variable you resolve on
@@ -87,7 +87,7 @@ static void resolution(Clause* w1, Clause* w2, Clause* wreturn){
 	linear time implementation algorithms as described by Marques Silva, J.P. and
 	Sakallah, K.A."Dynamic Search-Space Pruning Techniques in Path Sensitization-94"
 ******************************************************************************/
-void CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
+Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 
 	// initially the learning clause (wl) is the conflict clause
 	Clause* wl = sat_state->conflict_clause;
@@ -119,4 +119,6 @@ void CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 	}
 
 	sat_state->alpha = wl;
+	return wl;
+
 }

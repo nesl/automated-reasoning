@@ -169,7 +169,6 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 		pch = strtok (NULL, " ");
 	}
 
-
 	clause->num_literals_in_clause = countvariables;
 	clause->max_size_list_literals = MIN_CAPACITY;
 	clause->is_subsumed = 0;
