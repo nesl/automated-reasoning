@@ -11,7 +11,7 @@
 /* GLOBALS */
 BOOLEAN FLAG_CASE1_UNIT_RESOLUTION = 0;
 BOOLEAN FLAG_CASE2_UNIT_RESOLUTION = 0;
-BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 0;  //TODO: set this to 1 in the final version
+BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 1;  //TODO: set this to 1 in the final version
 
 
 #ifdef DEBUG
@@ -320,7 +320,8 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	FLAG_CASE2_UNIT_RESOLUTION = 1;
 
 	//learn clause
-	//CDCL_non_chronological_backtracking_first_UIP(sat_state); // will assign alpha
+	// update the gamma list with the new alpha (just for performance analysis)
+	add_clause_to_gamma(sat_state);
 
 	update_vsids_scores(sat_state);
 
@@ -328,8 +329,6 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
 	if(!success){
 		CDCL_non_chronological_backtracking_first_UIP(sat_state);
-		// update the gamma list with the new alpha (just for performance analysis)
-		add_clause_to_gamma(sat_state);
 	}
 
 
@@ -565,7 +564,6 @@ BOOLEAN sat_unit_resolution(SatState* sat_state) {
 void sat_undo_unit_resolution(SatState* sat_state) {
 #ifdef DEBUG
 	printf("Undo unit resolution:\n");
-	print_all_clauses(sat_state);
 #endif
 	unsigned long num_reduced_decisions = 0;
 	// undo the set literals at the current decision level
@@ -589,12 +587,6 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 	//update the current decision level
 	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions;
 	sat_state->current_decision_level -- ;
-
-#ifdef DEBUG
-	printf("Undo unit resolution:\n");
-	print_all_clauses(sat_state);
-#endif
-
 }
 
 //returns 1 if the decision level of the sat state equals to the assertion level of clause,

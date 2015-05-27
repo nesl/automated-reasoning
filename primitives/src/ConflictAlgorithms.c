@@ -8,6 +8,8 @@
 #include "ConflictAlgorithms.h"
 #include "LiteralWatch.h"
 #define MALLOC_GROWTH_RATE 	   	2
+#define USE_UIP_LEARNT_CLAUSE	1
+
 
 static void update_delta_with_gamma(SatState* sat_state){
 	//TODO: Do I really need to do this. I just need to update the watching clause lists for the literals. Keep this for now but check later
@@ -35,9 +37,6 @@ static void update_delta_with_gamma(SatState* sat_state){
 	sat_state->num_clauses_in_delta++;
 }
 
-
-
-
 void add_clause_to_gamma(SatState* sat_state){
 	if(sat_state->num_clauses_in_gamma >= sat_state->max_size_list_gamma){
 		// needs to realloc the size
@@ -52,6 +51,12 @@ void add_clause_to_gamma(SatState* sat_state){
 
 static void add_literal_to_clause(Lit* lit, Clause* clause){
 
+//first I have to check if this literal is already in the clause then don't re-add it
+	for(unsigned long i =0; i< clause->num_literals_in_clause; i++){
+		if(lit->sindex == clause->literals[i]->sindex)
+			return;
+	}
+
 	if(clause->num_literals_in_clause >= clause->max_size_list_literals){
 		// needs to realloc the size
 		clause->max_size_list_literals = clause->num_literals_in_clause * MALLOC_GROWTH_RATE;
@@ -60,7 +65,6 @@ static void add_literal_to_clause(Lit* lit, Clause* clause){
 
 	clause->literals[clause->num_literals_in_clause++] = lit;
 }
-
 
 static BOOLEAN check_element_of_resolvent_list(Var* var, Var** resolvent_list, unsigned long size){
 	BOOLEAN skip = 0;
@@ -74,7 +78,6 @@ static BOOLEAN check_element_of_resolvent_list(Var* var, Var** resolvent_list, u
 	return skip;
 }
 
-
 // Resolution between two clauses
 static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
 	//alpha_l = {~A, ~X, ~Y }
@@ -86,6 +89,7 @@ static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
 
 	//TODO: actually it can be more than one resolvent it can be a list
 #ifdef DEBUG
+	printf("BEGIN Clause Resolution between clauses: \n");
 	print_clause(alpha_l);
 	print_clause(wl_1);
 #endif
@@ -150,8 +154,6 @@ static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
 	FREE(resolvent_var_list);
 }
 
-
-
 static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
 
 	 wl_1->cindex = conflict_clause->cindex;
@@ -168,6 +170,58 @@ static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
 
 }
 
+static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
+	BOOLEAN predicate_value =0;
+	// not a decision TODO: what if the UIP was the decision!?
+	if((lit->decision_level == sat_state->current_decision_level) && (sat_literal_var(lit)->antecedent != NULL))
+		predicate_value = 1;
+
+
+	return predicate_value;
+}
+
+static void unit_resolution(Clause* clause, Clause* unit_clause, Clause* newclause){
+	// get the literal from the unit clause
+	Lit* lit = unit_clause->literals[0];
+
+	for(unsigned long i =0; i< clause->max_size_list_literals; i++){
+		if (clause->literals[i]->sindex == lit->num_watched_clauses)
+			continue;
+		else
+			add_literal_to_clause(lit, newclause);
+	}
+}
+
+
+static BOOLEAN is_fixed_point_reached(Clause* wl, SatState* sat_state, BOOLEAN use_UIP){
+	BOOLEAN reached = 0;
+
+	if(use_UIP){
+		unsigned long count_asserting_literals = 0;
+		for(unsigned long i =0; i < wl->num_literals_in_clause; i++){
+			Lit* lit = wl->literals[i];
+			if(lit->decision_level == sat_state->current_decision_level){
+				count_asserting_literals++;
+			}
+		}
+		if(count_asserting_literals == 1) // is indeed an asserting clause // only one literal at the current decision level
+			reached = 1;
+
+		return reached;
+	}
+	else{
+		for(unsigned long i =0; i< wl->num_literals_in_clause; i++){
+			Lit* lit = wl->literals[i];
+			if(is_predicate_hold(lit, sat_state))
+				return 0;
+			else
+				continue;
+		}
+		//reached end of loop and no return then predicate does not hold for all literals then reached = 1
+		return 1;
+	}
+}
+
 
 /******************************************************************************
 	First UIP algorithm for the non-chronological backtracking using the
@@ -182,8 +236,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 	wl->is_subsumed = 0;
 	wl->max_size_list_literals = 1;
 	wl->num_literals_in_clause = 0;
-
-
+	wl->cindex = sat_state->num_clauses_in_delta ++ ; // the learnt clause will have the next index in delta
 
 	Clause* wl_1 = (Clause*) malloc(sizeof(Clause));
 	wl_1->literals = (Lit**) malloc(sizeof(Lit*) * (sat_state->conflict_clause->num_literals_in_clause)); // because at the beginning wl-1 is copied with conflict clause
@@ -198,21 +251,13 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		Clause* alpha_l = NULL;
 		for(unsigned long i=0; i< wl_1->num_literals_in_clause; i++){
 			Lit* lit = wl_1->literals[i];
-			if(sat_literal_var(lit)->antecedent != NULL){ // not a decision TODO: what if the UIP was the decision!?
-				if(lit->decision_level == sat_state->current_decision_level){
-					alpha_l = sat_literal_var(lit)->antecedent;
-#ifdef DEBUG
-					print_clause(sat_literal_var(lit)->antecedent);
-#endif
-					break; // break for
-				}
-			}
-			else // we reach a decision node
-			{
-				//TODO something has to be done here!
+			if(is_predicate_hold(lit, sat_state)){
+				alpha_l = sat_literal_var(lit)->antecedent; // alpha_l will always be a unit clause
+				//break; // break for
+				//maybe continue
+				continue;
 			}
 		}
-
 		// resolve the conflict clause with the asserted variable antecedent and update the conflict clause (wl)
 		// for the next loop
 		resolution(alpha_l, wl_1, wl);
@@ -222,15 +267,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		printf("The clause consists of: \n");
 		print_clause(wl);
 #endif
-		//check the breaking condition of fixed point
-		unsigned long count_asserting_literals = 0;
-		for(unsigned long i =0; i < wl->num_literals_in_clause; i++){
-			Lit* lit = wl->literals[i];
-			if(lit->decision_level == sat_state->current_decision_level){
-				count_asserting_literals++;
-			}
-		}
-		if(count_asserting_literals == 1) // is indeed an asserting clause // only one literal at the current decision level
+		if(is_fixed_point_reached(wl, sat_state, USE_UIP_LEARNT_CLAUSE) == 1) // is indeed an asserting clause // only one literal at the current decision level
 			fixed_point_achieved = 1;
 		else{
 			//switch the pointers
@@ -241,7 +278,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 			wl->max_size_list_literals = 1;
 			wl->num_literals_in_clause = 0;
 		}
-	}
+	} //end of while
 
 	sat_state->alpha = wl;
 	return wl;

@@ -14,8 +14,16 @@ Lit* get_free_literal(SatState* sat_state) {
     Var* var  = sat_index2var(i+1,sat_state); //note index is i+1, not i
     Lit* plit = sat_pos_literal(var);
     Lit* nlit = sat_neg_literal(var);
-    if(!sat_implied_literal(plit) && !sat_implied_literal(nlit)) return plit;
+    if(!sat_implied_literal(plit) && !sat_implied_literal(nlit)){
+#ifdef DEBUG
+    	printf("Decided Lit: %ld\n", plit->sindex);
+    	return plit;
+#endif
+    }
   }
+#ifdef DEBUG
+  printf("All literals are implied -- no more free literal\n");
+#endif
   return NULL; //all literals are implied
 }
 
@@ -27,7 +35,7 @@ Clause* sat_aux(SatState* sat_state) {
 
   Clause* learned = sat_decide_literal(lit,sat_state);
   if(learned==NULL) learned = sat_aux(sat_state);
-  sat_undo_decide_literal(sat_state);
+  	  sat_undo_decide_literal(sat_state); //I commented this
 
   if(learned!=NULL) { //there is a conflict
     if(sat_at_assertion_level(learned,sat_state)) {
@@ -71,37 +79,35 @@ int main(int argc, char* argv[]) {
 //  sat_decide_literal(sat_state->variables[4].negLit, sat_state); //-V5
 
 
-	  /*test for conflict driven clause */
-  	  Clause* learned = sat_decide_literal(sat_state->variables[0].posLit, sat_state);  // A
-  	  print_all_clauses(sat_state);
-  	  if(learned == NULL)
-  		  learned = sat_decide_literal(sat_state->variables[1].posLit, sat_state); //B
-  	  print_all_clauses(sat_state);
-
-  	  if(learned == NULL)
-  		  learned = sat_decide_literal(sat_state->variables[2].posLit, sat_state); //C
-  	  print_all_clauses(sat_state);
-
-  	  if(learned == NULL)
-  		  learned = sat_decide_literal(sat_state->variables[3].posLit, sat_state); //X
-  	  print_all_clauses(sat_state);
-
-  	  if(learned != NULL){
-  		  print_all_clauses(sat_state);
-		  sat_undo_decide_literal(sat_state);
-		  print_all_clauses(sat_state);
-		  if(sat_at_assertion_level(learned,sat_state)) {
-		        learned = sat_assert_clause(learned,sat_state);
-		  }
-	  }
+//	  /*test for conflict driven clause */
+//  	  Clause* learned = sat_decide_literal(sat_state->variables[0].posLit, sat_state);  // A
+//  //	  print_all_clauses(sat_state);
+//  	  if(learned == NULL)
+//  		  learned = sat_decide_literal(sat_state->variables[1].posLit, sat_state); //B
+//  	//  print_all_clauses(sat_state);
+//
+//  	  if(learned == NULL)
+//  		  learned = sat_decide_literal(sat_state->variables[2].posLit, sat_state); //C
+//  	//  print_all_clauses(sat_state);
+//
+//  	  if(learned == NULL)
+//  		  learned = sat_decide_literal(sat_state->variables[3].posLit, sat_state); //X
+//  	//  print_all_clauses(sat_state);
+//
+//  	  if(learned != NULL){
+//		  sat_undo_decide_literal(sat_state);
+//		  if(sat_at_assertion_level(learned,sat_state)) {
+//		        learned = sat_assert_clause(learned,sat_state);
+//		  }
+//	  }
 
 #endif
 
 
-//	  if(sat(sat_state))
-//		  printf("SAT\n");
-//	  else
-//		  printf("UNSAT\n");
+	  if(sat(sat_state))
+		  printf("SAT\n");
+	  else
+		  printf("UNSAT\n");
 
 
 
