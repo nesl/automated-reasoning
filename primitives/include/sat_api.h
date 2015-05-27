@@ -258,6 +258,10 @@ void sat_undo_decide_literal(SatState* sat_state);
 /******************************************************************************
  * Clauses 
  ******************************************************************************/
+#ifdef DEBUG
+void print_clause(Clause* clause);
+void print_all_clauses(SatState* sat_state);
+#endif
 
 //returns a clause structure for the corresponding index
 Clause* sat_index2clause(c2dSize index, const SatState* sat_state);

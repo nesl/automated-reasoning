@@ -9,8 +9,6 @@
 #include "LiteralWatch.h"
 #define MALLOC_GROWTH_RATE 	   	2
 
-
-
 static void update_delta_with_gamma(SatState* sat_state){
 	//TODO: Do I really need to do this. I just need to update the watching clause lists for the literals. Keep this for now but check later
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
@@ -64,69 +62,94 @@ static void add_literal_to_clause(Lit* lit, Clause* clause){
 }
 
 
+static BOOLEAN check_element_of_resolvent_list(Var* var, Var** resolvent_list, unsigned long size){
+	BOOLEAN skip = 0;
+
+	for(unsigned long i =0; i< size; i++){
+		if(var->index == resolvent_list[i]->index){
+			skip = 1;
+			break;
+		}
+	}
+	return skip;
+}
+
+
 // Resolution between two clauses
 static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
+	//alpha_l = {~A, ~X, ~Y }
+	//wl_1 = {~A, Y, ~Z}
+	// I should expect wl = {~A, ~X, ~Z}
 
-//	Var* resolvent_var;
-//
-//	// At the beginning union alpha_l and wl_1 in wl and then remove unnecessary literals
-//
-//	for(unsigned long i =0 ; i< alpha_l->num_literals_in_clause; i++){
-//		Lit* alit = alpha_l->literals[i];
-//		for(unsigned long j = 0; j< wl_1->num_literals_in_clause; j++){
-//			Lit* wlit = wl_1->literals[j];
-//			//check if they are of opposite sign
-//			if(sat_literal_var(alit)->index == sat_literal_var(wlit)->index){
-//				if((alit->sindex > 0 && wlit->sindex < 0) || (alit->sindex < 0 && wlit->sindex > 0)){
-//
-//				}
-//			}
-//		}
-//	}
+	// algorithm
+	//get the resolvent first then add all the literals of alpha_l and wl_1 to wl unless it is equal to the resolvent
+
+	//TODO: actually it can be more than one resolvent it can be a list
+#ifdef DEBUG
+	print_clause(alpha_l);
+	print_clause(wl_1);
+#endif
 
 
-//	BOOLEAN flag_dont_add_alit;
-//
-//	Clause*	big;
-//	Clause*	small;
-//
-//	if(alpha_l->num_literals_in_clause >= wl_1->num_literals_in_clause){
-//		big = alpha_l;
-//		small = wl_1;
-//	}
-//	else{
-//		big = wl_1;
-//		small = alpha_l;
-//	}
-//
-//
-//	for (unsigned long i =0; i < big->num_literals_in_clause; i++){
-//		flag_dont_add_alit = 0;
-//		Lit* alit = big->literals[i];
-//		for(unsigned long j =0; j<small->num_literals_in_clause; j++){
-//			Lit* wlit = small->literals[j];
-//
-//			//if same variable check if they are the same sign and index then do nothing (alit will be added by the flag later)
-//			if(sat_literal_var(alit)->index == sat_literal_var(wlit)->index){
-//				if((alit->sindex > 0 && wlit->sindex > 0)   || (alit->sindex < 0 && wlit->sindex < 0)){
-//					continue;
-//				}
-//
-//				// if they are of different signs then this literal is removed -- continue
-//				if((alit->sindex > 0 && wlit->sindex < 0)   || (alit->sindex < 0 && wlit->sindex > 0)){
-//					flag_dont_add_alit = 1;
-//				}
-//
-//			}
-//
-//		}
-//		if(!flag_dont_add_alit){
-//			add_literal_to_clause(alpha_l->literals[i], wl);
-//		}
-//
-//
-//	}
+	Var** resolvent_var_list = (Var**)malloc(sizeof(Var*));
+	unsigned long num_of_var_in_list = 0;
+	unsigned long max_size_of_var_in_list = 1;
+
+	for(unsigned long i =0 ; i< alpha_l->num_literals_in_clause; i++){
+		Lit* alit = alpha_l->literals[i];
+		for(unsigned long j = 0; j< wl_1->num_literals_in_clause; j++){
+			Lit* wlit = wl_1->literals[j];
+			//check if they are of opposite sign --> i.e. a resolvent
+			if(sat_literal_var(alit)->index == sat_literal_var(wlit)->index){
+				if((alit->sindex > 0 && wlit->sindex < 0) || (alit->sindex < 0 && wlit->sindex > 0)){
+					Var* added_var = sat_literal_var(alit); // or wlit it doesn't matter they are the same
+#ifdef DEBUG
+					printf("resolvent variable added: %ld\n", added_var->index);
+#endif
+					//add added_var to the list
+					if(num_of_var_in_list >= max_size_of_var_in_list){
+						max_size_of_var_in_list = num_of_var_in_list * MALLOC_GROWTH_RATE;
+						resolvent_var_list = (Var**)realloc(resolvent_var_list, sizeof(Var*) * max_size_of_var_in_list );
+					}
+					resolvent_var_list[num_of_var_in_list++] = added_var;
+				}
+			}
+		}
+	}
+
+#ifdef DEBUG
+	printf("Resolvent variable list is ready with %ld variables in it\n Debugging the variable list:\n", num_of_var_in_list);
+	for(unsigned long i =0; i < num_of_var_in_list;i++){
+		printf("%ld\t", resolvent_var_list[i]->index);
+	}
+	printf("\n");
+#endif
+	// at the end of the loop I should have all the resolvent variable ready
+	// go element by element in alpha_l and wl_1 and check if this element is one of the resolvent
+	//Check alpha_l first
+	for(unsigned long i =0 ; i< alpha_l->num_literals_in_clause; i++){
+		Lit* alit = alpha_l->literals[i];
+
+		BOOLEAN skip = check_element_of_resolvent_list(sat_literal_var(alit), resolvent_var_list, num_of_var_in_list);
+		if(!skip){
+			add_literal_to_clause(alit, wl);
+		}
+	}
+	//check wl_1 as well
+	for(unsigned long i =0 ; i< wl_1->num_literals_in_clause; i++){
+		Lit* wlit = wl_1->literals[i];
+
+		BOOLEAN skip = check_element_of_resolvent_list(sat_literal_var(wlit), resolvent_var_list, num_of_var_in_list);
+		if(!skip){
+			add_literal_to_clause(wlit, wl);
+		}
+	}
+
+	// at the end deallocate the Var**
+	// TODO: do I need deep clean here?
+	FREE(resolvent_var_list);
 }
+
 
 
 static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
@@ -175,9 +198,18 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		Clause* alpha_l = NULL;
 		for(unsigned long i=0; i< wl_1->num_literals_in_clause; i++){
 			Lit* lit = wl_1->literals[i];
-			if(lit->decision_level == sat_state->current_decision_level){
-				alpha_l = sat_literal_var(lit)->antecedent;
-				break; // break for
+			if(sat_literal_var(lit)->antecedent != NULL){ // not a decision TODO: what if the UIP was the decision!?
+				if(lit->decision_level == sat_state->current_decision_level){
+					alpha_l = sat_literal_var(lit)->antecedent;
+#ifdef DEBUG
+					print_clause(sat_literal_var(lit)->antecedent);
+#endif
+					break; // break for
+				}
+			}
+			else // we reach a decision node
+			{
+				//TODO something has to be done here!
 			}
 		}
 
@@ -185,6 +217,11 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		// for the next loop
 		resolution(alpha_l, wl_1, wl);
 
+#ifdef DEBUG
+		printf("Resolution of two clauses led to a new clause\n");
+		printf("The clause consists of: \n");
+		print_clause(wl);
+#endif
 		//check the breaking condition of fixed point
 		unsigned long count_asserting_literals = 0;
 		for(unsigned long i =0; i < wl->num_literals_in_clause; i++){

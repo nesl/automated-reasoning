@@ -61,7 +61,9 @@ int main(int argc, char* argv[]) {
   SatState* sat_state = sat_state_new(cnf_fname);
 #ifdef DEBUG
   printf("END OF SAT_STATE_CONSTRUCT");
+  print_all_clauses(sat_state);
 #endif
+
 #ifdef DEBUG
 	  /* For test of two literal watch */
 //  sat_decide_literal(sat_state->variables[0].negLit, sat_state); // -V1
@@ -71,17 +73,23 @@ int main(int argc, char* argv[]) {
 
 	  /*test for conflict driven clause */
   	  Clause* learned = sat_decide_literal(sat_state->variables[0].posLit, sat_state);  // A
+  	  print_all_clauses(sat_state);
   	  if(learned == NULL)
   		  learned = sat_decide_literal(sat_state->variables[1].posLit, sat_state); //B
+  	  print_all_clauses(sat_state);
 
   	  if(learned == NULL)
   		  learned = sat_decide_literal(sat_state->variables[2].posLit, sat_state); //C
+  	  print_all_clauses(sat_state);
 
   	  if(learned == NULL)
   		  learned = sat_decide_literal(sat_state->variables[3].posLit, sat_state); //X
+  	  print_all_clauses(sat_state);
 
   	  if(learned != NULL){
+  		  print_all_clauses(sat_state);
 		  sat_undo_decide_literal(sat_state);
+		  print_all_clauses(sat_state);
 		  if(sat_at_assertion_level(learned,sat_state)) {
 		        learned = sat_assert_clause(learned,sat_state);
 		  }
