@@ -35,7 +35,7 @@ Clause* sat_aux(SatState* sat_state) {
 
   Clause* learned = sat_decide_literal(lit,sat_state);
   if(learned==NULL) learned = sat_aux(sat_state);
-  	  sat_undo_decide_literal(sat_state); //I commented this
+  sat_undo_decide_literal(sat_state);
 
   if(learned!=NULL) { //there is a conflict
     if(sat_at_assertion_level(learned,sat_state)) {

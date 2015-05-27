@@ -16,7 +16,7 @@ static void update_delta_with_gamma(SatState* sat_state){
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
 			// needs to realloc the size
 			sat_state->max_size_list_delta =(sat_state->num_clauses_in_delta * MALLOC_GROWTH_RATE);
-			sat_state->delta = (Clause*) realloc( sat_state->delta, sizeof(Clause*) * (sat_state->max_size_list_delta));
+			sat_state->delta = (Clause*) realloc( sat_state->delta, sizeof(Clause) * (sat_state->max_size_list_delta));
 		}
 
 	sat_state->delta[sat_state->num_clauses_in_delta] = *(sat_state->alpha);
@@ -41,7 +41,7 @@ void add_clause_to_gamma(SatState* sat_state){
 	if(sat_state->num_clauses_in_gamma >= sat_state->max_size_list_gamma){
 		// needs to realloc the size
 		sat_state->max_size_list_gamma =(sat_state->num_clauses_in_gamma * MALLOC_GROWTH_RATE);
-		sat_state->gamma = (Clause*) realloc( sat_state->gamma, sizeof(Clause*) * (sat_state->max_size_list_gamma));
+		sat_state->gamma = (Clause*) realloc( sat_state->gamma, sizeof(Clause) * (sat_state->max_size_list_gamma));
 	}
 
 	sat_state->gamma[sat_state->num_clauses_in_gamma++] = *(sat_state->alpha);

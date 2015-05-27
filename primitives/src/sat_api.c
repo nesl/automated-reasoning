@@ -325,6 +325,12 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
 	update_vsids_scores(sat_state);
 
+
+	// decrease the current decision level of sat_state here before run unit resolution.
+	// This is done here due to the way the main is constructed.
+	// I can't decrease the current level in the undo_unit_resolution because afterwards I am checking at_asserting_level
+	sat_state->current_decision_level -- ;
+
 	BOOLEAN success = sat_unit_resolution(sat_state);
 
 	if(!success){
@@ -392,7 +398,10 @@ SatState* sat_state_new(const char* file_name) {
 
   sat_state->current_decision_level = 1; // this is by description
   sat_state->num_clauses_in_delta = 0;
+
   sat_state->num_clauses_in_gamma = 0;
+  sat_state->max_size_list_gamma = 1;
+
   sat_state->num_literals_in_decision = 0;
   sat_state->num_literals_in_implications = 0;
   sat_state->num_variables_in_cnf = 0;
@@ -586,7 +595,10 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 	}
 	//update the current decision level
 	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions;
-	sat_state->current_decision_level -- ;
+
+	//TODO: don't decrease this for now due to how the main function is constructed! the decision level is reduced after adding the asserting clause
+	//sat_state->current_decision_level -- ;
+
 }
 
 //returns 1 if the decision level of the sat state equals to the assertion level of clause,
