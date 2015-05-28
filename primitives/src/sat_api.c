@@ -21,6 +21,8 @@ void print_clause(Clause* clause){
 	}
 	if(clause->L1 != NULL && clause->L2!=NULL)
 		printf("Watching over: %ld, %ld", clause->L1->sindex, clause->L2->sindex);
+	else if(clause->L1 != NULL && clause->L2 == NULL)
+		printf("Watching over: %ld", clause->L1->sindex);
 	printf("\n");
 }
 
@@ -653,10 +655,12 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 	}
 	else{
 		//prepare the list of literals on which the unit resolution will run
+		//TODO: Do I really need to malloc
 		Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision);
 		unsigned long max_size_decision_list = sat_state->num_literals_in_decision; // max_size = num_literals for now
 		unsigned long num_decision_lit = sat_state->num_literals_in_decision;
 
+		literals_in_decision = sat_state->decisions;
 		return two_literal_watch(sat_state, literals_in_decision, num_decision_lit, max_size_decision_list);
 	}
 

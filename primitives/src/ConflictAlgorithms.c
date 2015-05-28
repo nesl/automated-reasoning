@@ -50,22 +50,19 @@ static void update_delta_with_gamma(SatState* sat_state){
 	if(sat_state->delta[sat_state->num_clauses_in_delta].num_literals_in_clause > 1){
 		sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
 		sat_state->delta[sat_state->num_clauses_in_delta].L2 = sat_state->delta[sat_state->num_clauses_in_delta].literals[1];
+		//update the state of the literals with that new watching clause
+		add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L1);
+		add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L2);
 	}
 	else{ //unit clause
 		sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
 		sat_state->delta[sat_state->num_clauses_in_delta].L2 = NULL;
+		//update the state of the literals with that new watching clause
+		add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L1);
 	}
 
 #ifdef DEBUG
 	printf("Update the watched literals of new clause\n");
-#endif
-
-	//update the state of the literals with that new watching clause
-	add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L1);
-	add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L2);
-
-#ifdef DEBUG
-	printf("Add the new clause to the list of watching clauses\n");
 #endif
 
 	// update the index of the new added clause
