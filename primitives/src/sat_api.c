@@ -317,7 +317,13 @@ c2dSize sat_learned_clause_count(const SatState* sat_state) {
 Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
 	//TODO check the requirements in the comments
-	FLAG_CASE2_UNIT_RESOLUTION = 1;
+
+	//run the initial case 1 if you learnt a unit clause
+	if(sat_state->alpha != NULL && sat_state->alpha->num_literals_in_clause == 1)
+		FLAG_CASE3_UNIT_RESOLUTION = 1;
+
+	else
+		FLAG_CASE2_UNIT_RESOLUTION = 1;
 
 	update_vsids_scores(sat_state); // it uses alpha
 
@@ -326,7 +332,7 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 #ifdef DEBUG
 	printf("Add clause to gamma: %ld\n", clause->cindex);
 #endif
-	add_clause_to_gamma(sat_state); // it added alpha to gamma and clears it
+	add_clause_to_gamma(sat_state); // it adds alpha to gamma and clears it
 
 
 	// decrease the current decision level of sat_state here before run unit resolution.
@@ -345,11 +351,6 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	if(!success){
 		CDCL_non_chronological_backtracking_first_UIP(sat_state);
 	}
-
-	//run the initial case 1 if you learnt a unit clause
-	if(sat_state->alpha != NULL && sat_state->alpha->num_literals_in_clause == 1)
-		FLAG_CASE3_UNIT_RESOLUTION = 1;
-
 
 	return sat_state->alpha;
 }
