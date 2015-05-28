@@ -11,15 +11,34 @@
 #define USE_UIP_LEARNT_CLAUSE	1
 
 
+
+//update the clause list of the variable
+static void update_variable_list(Clause* clause){
+	for(unsigned long i = 0; i< clause->num_literals_in_clause; i++){
+		Var* var = sat_literal_var(clause->literals[i]);
+		if(var->num_of_clauses_of_variables >= var->max_size_list_of_clause_of_variables){
+
+			var->max_size_list_of_clause_of_variables =(var->num_of_clauses_of_variables * MALLOC_GROWTH_RATE);
+			var->list_clause_of_variables = (Clause**) realloc( var->list_clause_of_variables, sizeof(Clause) * (var->max_size_list_of_clause_of_variables));
+		}
+
+		var->list_clause_of_variables[var->num_of_clauses_of_variables++] = clause;
+
+	}
+}
+
+
 static void update_delta_with_gamma(SatState* sat_state){
 	//TODO: Do I really need to do this. I just need to update the watching clause lists for the literals. Keep this for now but check later
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
 			// needs to realloc the size
 			sat_state->max_size_list_delta =(sat_state->num_clauses_in_delta * MALLOC_GROWTH_RATE);
 			sat_state->delta = (Clause*) realloc( sat_state->delta, sizeof(Clause) * (sat_state->max_size_list_delta));
-		}
+	}
 
 	sat_state->delta[sat_state->num_clauses_in_delta] = *(sat_state->alpha);
+
+	//TODO: Should I clear alpha here?
 
 	// update the watching literals L1 and L2
 	sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
@@ -32,6 +51,10 @@ static void update_delta_with_gamma(SatState* sat_state){
 
 	// update the index of the new added clause
 	sat_state->delta[sat_state->num_clauses_in_delta].cindex = sat_state->num_clauses_in_delta + 1;
+
+
+	//update the clause list of the variable
+	update_variable_list(&sat_state->delta[sat_state->num_clauses_in_delta]);
 
 	//update number of clauses in delta
 	sat_state->num_clauses_in_delta++;
