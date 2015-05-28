@@ -152,7 +152,7 @@ struct clause {
 typedef struct sat_state_t {
 
 	  Clause* delta;
-	  Clause* gamma;
+	  unsigned long* gamma; // Gamma is just a list of indices of clauses that were added to delta to avoid having double copy of the same clause
 	  Lit** decisions;
 	  Lit** implications;
 	  Clause* alpha;

@@ -39,13 +39,6 @@ static void update_delta_with_alpha(SatState* sat_state){
 
 	sat_state->delta[sat_state->num_clauses_in_delta] = *(sat_state->alpha); // copy the actual value
 
-	//TODO: Should I clear alpha here? Yes I should
-	sat_state->alpha = NULL;
-
-#ifdef DEBUG
-	printf("Cleared alpha\n");
-#endif
-
 	// update the watching literals L1 and L2 be careful that a learnt clause can be a unit clause
 	if(sat_state->delta[sat_state->num_clauses_in_delta].num_literals_in_clause > 1){
 		sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
@@ -75,64 +68,33 @@ static void update_delta_with_alpha(SatState* sat_state){
 	//update the clause list of the variable
 	update_variable_list(&sat_state->delta[sat_state->num_clauses_in_delta]);
 
+	if(sat_state->num_clauses_in_gamma >= sat_state->max_size_list_gamma){
+		// needs to realloc the size
+		sat_state->max_size_list_gamma =(sat_state->num_clauses_in_gamma * MALLOC_GROWTH_RATE);
+		sat_state->gamma = (unsigned long*) realloc( sat_state->gamma, sizeof(unsigned long) * (sat_state->max_size_list_gamma));
+	}
+	sat_state->gamma[sat_state->num_clauses_in_gamma++] = sat_state->delta[sat_state->num_clauses_in_delta].cindex;
+
 	//update number of clauses in delta
 	sat_state->num_clauses_in_delta++;
 
+	#ifdef DEBUG
+		printf("Number of literals of the new learnt clause %ld is %ld\n", sat_index2clause(sat_state->gamma[sat_state->num_clauses_in_gamma -1], sat_state)->cindex, sat_index2clause(sat_state->gamma[sat_state->num_clauses_in_gamma -1], sat_state)->num_literals_in_clause  );
+	#endif
+
+	//TODO: Should I clear alpha here? Yes I should
+	sat_state->alpha = NULL;
 
 #ifdef DEBUG
-	printf("Number of literals of the new learnt clause %ld is %ld\n", sat_state->delta[sat_state->num_clauses_in_delta].cindex, sat_state->delta[sat_state->num_clauses_in_delta].num_literals_in_clause);
+	printf("Cleared alpha\n");
 #endif
+
 
 }
 
 
 /***** Gamma is not used afterwards this is just for debugging and testing of performance so actually Gamma keeps a copy of its own clauses away from delta*/
 void add_clause_to_gamma(SatState* sat_state){
-	if(sat_state->num_clauses_in_gamma >= sat_state->max_size_list_gamma){
-		// needs to realloc the size
-		sat_state->max_size_list_gamma =(sat_state->num_clauses_in_gamma * MALLOC_GROWTH_RATE);
-		sat_state->gamma = (Clause*) realloc( sat_state->gamma, sizeof(Clause) * (sat_state->max_size_list_gamma));
-	}
-	sat_state->gamma[sat_state->num_clauses_in_gamma++] = *(sat_state->alpha);
-
-
-// update the watching literals L1 and L2 be careful that a learnt clause can be a unit clause
-	if(sat_state->gamma[sat_state->num_clauses_in_gamma].num_literals_in_clause > 1){
-		sat_state->gamma[sat_state->num_clauses_in_gamma].L1 = sat_state->gamma[sat_state->num_clauses_in_gamma].literals[0];
-		sat_state->gamma[sat_state->num_clauses_in_gamma].L2 = sat_state->gamma[sat_state->num_clauses_in_gamma].literals[1];
-		//update the state of the literals with that new watching clause
-		add_watching_clause(&sat_state->gamma[sat_state->num_clauses_in_gamma], sat_state->gamma[sat_state->num_clauses_in_gamma].L1);
-		add_watching_clause(&sat_state->gamma[sat_state->num_clauses_in_gamma], sat_state->gamma[sat_state->num_clauses_in_gamma].L2);
-	}
-	else{ //unit clause
-		sat_state->gamma[sat_state->num_clauses_in_gamma].L1 = sat_state->gamma[sat_state->num_clauses_in_gamma].literals[0];
-		sat_state->gamma[sat_state->num_clauses_in_gamma].L2 = NULL;
-		//update the state of the literals with that new watching clause
-		add_watching_clause(&sat_state->gamma[sat_state->num_clauses_in_gamma], sat_state->gamma[sat_state->num_clauses_in_gamma].L1);
-	}
-
-#ifdef DEBUG
-	printf("Update the watched literals of new clause\n");
-#endif
-
-	// update the index of the new added clause
-	sat_state->gamma[sat_state->num_clauses_in_gamma].cindex = sat_state->num_clauses_in_gamma; //- 1 +1 ; // remember the indices are from 0 to n-1
-
-#ifdef DEBUG
-	printf("Index of the new clause: %ld\n",sat_state->gamma[sat_state->num_clauses_in_gamma].cindex);
-#endif
-
-	//update the clause list of the variable
-	update_variable_list(&sat_state->gamma[sat_state->num_clauses_in_gamma]);
-
-	//update number of clauses in delta
-	sat_state->num_clauses_in_gamma++;
-
-
-	#ifdef DEBUG
-		printf("Number of literals of the new learnt clause %ld is %ld\n", sat_state->gamma[sat_state->num_clauses_in_gamma].cindex, sat_state->gamma[sat_state->num_clauses_in_gamma].num_literals_in_clause);
-	#endif
-
 
 	update_delta_with_alpha(sat_state);
 }

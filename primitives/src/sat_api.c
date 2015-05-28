@@ -331,9 +331,6 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
 	//learn clause
 	// update the gamma list with the new alpha (just for performance analysis)
-#ifdef DEBUG
-	printf("Add clause to gamma: %ld\n", clause->cindex);
-#endif
 	add_clause_to_gamma(sat_state); // it adds alpha to gamma and clears it
 
 
@@ -409,7 +406,7 @@ SatState* sat_state_new(const char* file_name) {
   //sat_state->decisions, sat_state->variables, sat_state->implications, sat_state->delta
   // and their corresponding parameters are set in parseDIMACS
 
-  sat_state->gamma = (Clause *) malloc(sizeof(Clause));
+  sat_state->gamma = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
   sat_state->alpha = (Clause *) malloc(sizeof(Clause));
 
   sat_state->current_decision_level = 1; // this is by description

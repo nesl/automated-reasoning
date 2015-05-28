@@ -131,6 +131,14 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 	unsigned long num_pending_lit = 0;
 
 	for(unsigned long i =0; i<num_decision_lit; i++){
+#ifdef DEBUG
+		printf("--------------------------------------\n");
+		printf("Decision list now: ");
+		for(unsigned long i =0; i< num_decision_lit;i++){
+			printf("%ld\t", literals_in_decision[i]->sindex );
+		}
+		printf("\n");
+#endif
 		//Lit* decided_literal = sat_state->decisions[sat_state->num_literals_in_decision -1];
 		Lit* decided_literal = literals_in_decision[i];
 		Lit* resolved_literal = get_resolved_lit(decided_literal, sat_state);

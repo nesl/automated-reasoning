@@ -24,7 +24,7 @@ void initialize_vsids_scores (SatState * sat_state)
 
 void update_vsids_scores (SatState * sat_state)
 {
-	printf("Updating!\n");
+	//printf("Updating!\n");
 
 	if (rand() % 4) // very rough 25% probability
 	{
@@ -47,7 +47,7 @@ void update_vsids_scores (SatState * sat_state)
 	}
 
 #ifdef DEBUG
-	printf("Finish updating scores!\n");
+	//printf("Finish updating scores!\n");
 #endif
 
 }
