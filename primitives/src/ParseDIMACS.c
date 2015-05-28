@@ -172,8 +172,14 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 	clause->is_subsumed = 0;
 
 	// For the two literal watch // just initialize here
-	clause->L1 =  clause->literals[0]; // first literal
-	clause->L2 =  clause->literals[1]; // second literal
+	if(clause->num_literals_in_clause > 1){
+		clause->L1 =  clause->literals[0]; // first literal
+		clause->L2 =  clause->literals[1]; // second literal
+	}
+	else{ //unit clause
+		clause->L1 = clause->literals[0];
+		clause->L2 = NULL;
+	}
 
 
 	return countvariables;

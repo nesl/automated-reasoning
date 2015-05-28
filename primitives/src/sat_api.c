@@ -15,17 +15,19 @@ BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 1;  //TODO: set this to 1 in the final vers
 
 #ifdef DEBUG
 void print_clause(Clause* clause){
-	printf("Debugging clause number %ld:\t", clause->cindex);
+	printf("clause index %ld:\t", clause->cindex);
 	for(unsigned long i = 0; i < clause->num_literals_in_clause; i++){
 		printf("%ld\t",clause->literals[i]->sindex);
 	}
+	if(clause->L1 != NULL && clause->L2!=NULL)
+		printf("Watching over: %ld, %ld", clause->L1->sindex, clause->L2->sindex);
 	printf("\n");
 }
 
 void print_all_clauses(SatState* sat_state){
 	printf("---------------------------------\n");
 	printf("Debugging all clauses: \n");
-	for(unsigned long i =0; i< sat_state->num_clauses_in_cnf; i++){
+	for(unsigned long i =0; i< sat_state->num_clauses_in_delta; i++){
 		print_clause(&sat_state->delta[i]);
 	}
 	printf("---------------------------------\n");
@@ -314,7 +316,6 @@ c2dSize sat_learned_clause_count(const SatState* sat_state) {
 //moreover, it should be called only if sat_at_assertion_level() succeeds
 Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
-	//TODO: Check the sanity if this
 	//TODO check the requirements in the comments
 	FLAG_CASE2_UNIT_RESOLUTION = 1;
 
@@ -328,18 +329,26 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	add_clause_to_gamma(sat_state); // it added alpha to gamma and clears it
 
 
-
-
 	// decrease the current decision level of sat_state here before run unit resolution.
 	// This is done here due to the way the main is constructed.
 	// I can't decrease the current level in the undo_unit_resolution because afterwards I am checking at_asserting_level
 	sat_state->current_decision_level -- ;
 
-	BOOLEAN success = sat_unit_resolution(sat_state);
+#ifdef DEBUG
+	printf("----- sat _assert_clause ---- before running unit resolution\n");
+	print_all_clauses(sat_state);
+#endif
+
+	BOOLEAN success = sat_unit_resolution(sat_state); //should use case 2 --> runs only on the decisions in the past
+
 
 	if(!success){
 		CDCL_non_chronological_backtracking_first_UIP(sat_state);
 	}
+
+	//run the initial case 1 if you learnt a unit clause
+	if(sat_state->alpha != NULL && sat_state->alpha->num_literals_in_clause == 1)
+		FLAG_CASE3_UNIT_RESOLUTION = 1;
 
 
 	return sat_state->alpha;
@@ -506,23 +515,111 @@ void literal_free (Lit * literal) {
  *
  * Yet, the first decided literal must have 2 as its decision level
  ******************************************************************************/
+static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, unsigned long* num_elements){
+
+	unsigned long cap = *capacity;
+	unsigned long num = *num_elements;
+
+	if(num >= cap){
+		// needs to realloc the size
+		cap =num * MALLOC_GROWTH_RATE;
+		list = (Lit**) realloc(list , sizeof(Lit*) * cap);
+	}
+
+		list[num++] = lit;
+
+		*num_elements = num;
+		*capacity = cap;
+
+}
 static BOOLEAN unit_resolution_case_1(SatState* sat_state){
 	// This is called after decide literal
 		FLAG_CASE1_UNIT_RESOLUTION = 0;
+
+
+		//prepare the list of literals on which the unit resolution will run
+		//loop on all decided literals that have the same last level
+		Lit** literals_in_last_decision = (Lit**)malloc(sizeof(Lit*));
+		unsigned long max_size_last_decision_list = 1;
+		unsigned long num_last_decision_lit = 0;
+
+
+//	#ifdef DEBUG
+//		printf("Number of literals in the decision array = %ld ", sat_state->num_literals_in_decision);
+//	#endif
+
+		for(unsigned long i =0; i<sat_state->num_literals_in_decision; i++){
+			if(sat_state->decisions[i]->decision_level != sat_state->current_decision_level)
+				continue;
+			else
+			 //TODO: Enhance: I can just add all the elements after this point without having to check the level of each one again because levels are incremental
+				//while(i < sat_state->num_literals_in_decision){
+					add_literal_to_list(literals_in_last_decision, sat_state->decisions[i], &max_size_last_decision_list, &num_last_decision_lit);
+				//	i++;
+				//}
+
+		}
+//	#ifdef DEBUG
+//		printf("number of literals in the last decision level: %ld\n", num_last_decision_lit);
+//	#endif
+
+
+#ifdef DEBUG
+	printf("Decisions in the list for the two literal watch: ");
+	for(unsigned long i =0; i<num_last_decision_lit; i++){
+		printf("%ld\t", literals_in_last_decision[i]->sindex);
+	}
+	printf("\n");
+#endif
 		// run the two literal watch based on the new decision
-		return two_literal_watch(sat_state);
+		BOOLEAN ret = two_literal_watch(sat_state, literals_in_last_decision, num_last_decision_lit,max_size_last_decision_list);
+
+#ifdef DEBUG
+	printf("----- sat _decide_literal ---- after running unit resolution\n");
+	print_all_clauses(sat_state);
+#endif
+
+	return ret;
 }
 
 static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 	// this is called after adding an asserting clause
 	//reset the flag
 	FLAG_CASE2_UNIT_RESOLUTION = 0;
-	//TODO: // something has to be done with the new conflict clause
-	return  two_literal_watch(sat_state);
+
+	//prepare the list of literals on which the unit resolution will run
+	Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision );
+	unsigned long max_size_decision_list = 1;
+	unsigned long num_decision_lit = 0;
+
+
+	//pass all the decision list again because the last level is cleared after the contradiction
+	literals_in_decision = sat_state->decisions;
+	max_size_decision_list = sat_state->num_literals_in_decision; // for now just put max size = num_literals
+	num_decision_lit = sat_state->num_literals_in_decision;
+
+
+#ifdef DEBUG
+	printf("Decisions in the list for the two literal watch: ");
+	for(unsigned long i =0; i<num_decision_lit; i++){
+		printf("%ld\t", literals_in_decision[i]->sindex);
+	}
+	printf("\n");
+#endif
+
+	BOOLEAN ret = two_literal_watch(sat_state,literals_in_decision, num_decision_lit, max_size_decision_list);
+
+#ifdef DEBUG
+	printf("----- sat _assert_clause ---- after running unit resolution\n");
+	print_all_clauses(sat_state);
+#endif
+
+	return  ret;
+
 }
 
 static BOOLEAN unit_resolution_case_3(SatState* sat_state){
-	//Reset the flag in this case because I don't want to execute this except once
+	//Reset the flag in this case because I don't want to execute this unless you have a unit clause
 	FLAG_CASE3_UNIT_RESOLUTION = 0;
 
 	// The first time it is called which is case 3 is before any decision or adding assertion clause.
@@ -539,7 +636,7 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 			else if (unit_lit->sindex > 0)
 				unit_lit->LitValue = 1;
 
-			unit_lit->decision_level = 1; // because it is unit
+			unit_lit->decision_level = 1; // because it is unit (not a decision)
 			unit_lit->LitState = 1;
 
 			//add it in the decision list without incrementing the decision level
@@ -547,21 +644,26 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 			sat_state->current_decision_level = 1;
 		}
 	}
-	// now the decision list is updated with all unit literals
+	// now the decision list is updated with all asserted unit literals
 	// run the two literal watch algorithm
 	if(sat_state->num_literals_in_decision == 0){
 		// there was no unit clause
 		return 1; //just return and takes the next step
 	}
 	else{
-		return two_literal_watch(sat_state);
+		//prepare the list of literals on which the unit resolution will run
+		Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision);
+		unsigned long max_size_decision_list = sat_state->num_literals_in_decision; // max_size = num_literals for now
+		unsigned long num_decision_lit = sat_state->num_literals_in_decision;
+
+		return two_literal_watch(sat_state, literals_in_decision, num_decision_lit, max_size_decision_list);
 	}
 
 }
 //applies unit resolution to the cnf of sat state
 //returns 1 if unit resolution succeeds, 0 if it finds a contradiction
 BOOLEAN sat_unit_resolution(SatState* sat_state) {
-	//TODO: How to distinguish between the three cases
+
 	if(FLAG_CASE3_UNIT_RESOLUTION == 1){
 		return unit_resolution_case_3(sat_state);
 	}
@@ -607,14 +709,14 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 			//	poslit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals. This value will be overwritten later
 				poslit->LitState = 0;
 				poslit->LitValue = 'u';
-				poslit->num_watched_clauses = 0;
+				//poslit->num_watched_clauses = 0; // watched clauses should stay the same
 
 
 				Lit* neglit = var->negLit;
 			//	neglit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals
 				neglit->LitState = 0;
 				neglit->LitValue = 'u';
-				neglit->num_watched_clauses = 0;
+				//neglit->num_watched_clauses = 0; //watched clauses should stay the same
 			}
 			num_reduced_decisions ++;
 		}
@@ -631,7 +733,7 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions -1; // you reduce another one which is the implied driven literal at the end
 
 	//reset the initialization of the literal watch
-	clear_init_literal_watch();
+	//clear_init_literal_watch();
 
 	//TODO: don't decrease this for now due to how the main function is constructed! the decision level is reduced after adding the asserting clause
 	//sat_state->current_decision_level -- ;

@@ -26,13 +26,11 @@ static void update_variable_list(Clause* clause){
 	}
 }
 
-
 static void update_delta_with_gamma(SatState* sat_state){
 
 #ifdef DEBUG
 	printf("Add gamma to delta: number of clauses in delta: %ld\n",sat_state->num_clauses_in_delta);
 #endif
-	//TODO: Do I really need to do this. I just need to update the watching clause lists for the literals. Keep this for now but check later
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
 			// needs to realloc the size
 			sat_state->max_size_list_delta =(sat_state->num_clauses_in_delta * MALLOC_GROWTH_RATE);
@@ -48,9 +46,16 @@ static void update_delta_with_gamma(SatState* sat_state){
 	printf("Cleared alpha\n");
 #endif
 
-	// update the watching literals L1 and L2
-	sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
-	sat_state->delta[sat_state->num_clauses_in_delta].L2 = sat_state->delta[sat_state->num_clauses_in_delta].literals[1];
+	// update the watching literals L1 and L2 be careful that a learnt clause can be a unit clause
+	if(sat_state->delta[sat_state->num_clauses_in_delta].num_literals_in_clause > 1){
+		sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
+		sat_state->delta[sat_state->num_clauses_in_delta].L2 = sat_state->delta[sat_state->num_clauses_in_delta].literals[1];
+	}
+	else{ //unit clause
+		sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
+		sat_state->delta[sat_state->num_clauses_in_delta].L2 = NULL;
+	}
+
 #ifdef DEBUG
 	printf("Update the watched literals of new clause\n");
 #endif
@@ -75,6 +80,12 @@ static void update_delta_with_gamma(SatState* sat_state){
 
 	//update number of clauses in delta
 	sat_state->num_clauses_in_delta++;
+
+
+#ifdef DEBUG
+	printf("Number of literals of the new learnt clause %ld is %ld", sat_state->delta[sat_state->num_clauses_in_delta].cindex, sat_state->delta[sat_state->num_clauses_in_delta].num_literals_in_clause);
+#endif
+
 }
 
 void add_clause_to_gamma(SatState* sat_state){
@@ -83,10 +94,7 @@ void add_clause_to_gamma(SatState* sat_state){
 		sat_state->max_size_list_gamma =(sat_state->num_clauses_in_gamma * MALLOC_GROWTH_RATE);
 		sat_state->gamma = (Clause*) realloc( sat_state->gamma, sizeof(Clause) * (sat_state->max_size_list_gamma));
 	}
-
 	sat_state->gamma[sat_state->num_clauses_in_gamma++] = *(sat_state->alpha);
-
-
 
 	update_delta_with_gamma(sat_state);
 }
@@ -201,10 +209,12 @@ static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
 	 wl_1->cindex = conflict_clause->cindex;
 	 wl_1->is_subsumed = conflict_clause->is_subsumed;
 	 wl_1->mark = conflict_clause->mark;
-	 wl_1->L1 = conflict_clause->L1;
-	 wl_1->L2 = conflict_clause->L2;
+//	 wl_1->L1 = conflict_clause->L1;
+//	 wl_1->L2 = conflict_clause->L2; // this is not correct because the learning clause can be unit clause
 	 wl_1->max_size_list_literals = conflict_clause->max_size_list_literals;
 	 wl_1->num_literals_in_clause = conflict_clause->num_literals_in_clause;
+	 wl_1->L1 = NULL; //TODO: not fixed for unit learnt clause!
+	 wl_1->L2 = NULL;
 
 	 for(unsigned long i =0; i< conflict_clause->num_literals_in_clause; i++){
 		wl_1->literals[i] = conflict_clause->literals[i];

@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
   //construct a sat state and then check satisfiability
   SatState* sat_state = sat_state_new(cnf_fname);
 #ifdef DEBUG
-  printf("END OF SAT_STATE_CONSTRUCT");
+  printf("END OF SAT_STATE_CONSTRUCT\n");
   print_all_clauses(sat_state);
 #endif
 
