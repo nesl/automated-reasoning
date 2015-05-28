@@ -51,3 +51,62 @@ void update_vsids_scores (SatState * sat_state)
 #endif
 
 }
+
+Lit* vsids_get_free_literal (SatState* sat_state) {
+
+	Lit * max_lit = NULL;
+	unsigned long max_score = 0;
+
+	for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_state; vidx++)
+	{
+		Var cur_var = sat_state->variables[vidx];
+
+		Lit * cur_lit;
+
+		cur_lit = cur_var.posLit;
+
+		if (cur_lit->vsids_score > max_score)
+		{
+			if (is_free_literal(cur_lit))
+			{
+				max_score = cur_lit->vsids_score;
+				max_lit = cur_lit;
+			}
+		}
+		else if (cur_lit->vsids_score == max_score)
+		{
+			if (is_free_literal(cur_lit))
+			{
+				// break ties with some randomization
+				if (rand() % 2) {
+					max_score = cur_lit->vsids_score;
+					max_lit = cur_lit;
+				}
+			}
+		}
+
+		cur_lit = cur_var.negLit;
+
+		if (cur_lit->vsids_score > max_score)
+		{
+			if (is_free_literal(cur_lit))
+			{
+				max_score = cur_lit->vsids_score;
+				max_lit = cur_lit;
+			}
+		}
+		else if (cur_lit->vsids_score == max_score)
+		{
+			if (is_free_literal(cur_lit))
+			{
+				// break ties with some randomization
+				if (rand() % 2) {
+					max_score = cur_lit->vsids_score;
+					max_lit = cur_lit;
+				}
+			}
+		}
+	}
+
+  return max_lit;
+}

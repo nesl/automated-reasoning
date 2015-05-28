@@ -12,5 +12,6 @@
 
 void initialize_vsids_scores (SatState * sat_state);
 void update_vsids_scores (SatState * sat_state);
+Lit* vsids_get_free_literal (SatState* sat_state);
 
 #endif /* VSIDS_H_ */
