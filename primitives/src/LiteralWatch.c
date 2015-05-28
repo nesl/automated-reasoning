@@ -6,13 +6,16 @@
  */
 
 #include "LiteralWatch.h"
+#include "global.h"
 #include <assert.h>
 
+// local value for this file
+static BOOLEAN INIT_LITERAL_WATCH = 0;
 
-#define MALLOC_GROWTH_RATE 	   	2
 
-/** Global variable for this file **/
-BOOLEAN literal_watched_initialized = 0;
+void clear_init_literal_watch(){
+	INIT_LITERAL_WATCH = 0;
+}
 
 
 static void intitialize_watching_clauses(SatState* sat_state){
@@ -25,7 +28,7 @@ static void intitialize_watching_clauses(SatState* sat_state){
 		add_watching_clause(&watching_clause, watched_literal2);
 	}
 	// Set the initialization flag;
-	literal_watched_initialized = 1;
+	INIT_LITERAL_WATCH = 1;
 }
 
 static Lit* get_resolved_lit(Lit* decided_literal, SatState* sat_state){
@@ -65,6 +68,19 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 
 }
 
+
+//static Clause* construct_unit_clause(Lit* free_lit){
+//	Clause* unit_clause = (Clause*) malloc (sizeof(Clause));
+//	unit_clause->literals = (Lit**) malloc (sizeof(Lit*));
+//	unit_clause->max_size_list_literals = 1;
+//	unit_clause->num_literals_in_clause = 1;
+//	// I don't care about the rest of the parameters
+//	unit_clause->literals[0] = free_lit;
+//	return unit_clause;
+//}
+
+
+
 /******************************************************************************
 add watching clause to the list of watching clauses over a literal
 ******************************************************************************/
@@ -84,15 +100,6 @@ void add_watching_clause(Clause* clause, Lit* lit){
 	lit->num_watched_clauses ++;
 }
 
-static Clause* construct_unit_clause(Lit* free_lit){
-	Clause* unit_clause = (Clause*) malloc (sizeof(Clause));
-	unit_clause->literals = (Lit**) malloc (sizeof(Lit*));
-	unit_clause->max_size_list_literals = 1;
-	unit_clause->num_literals_in_clause = 1;
-	// I don't care about the rest of the parameters
-	unit_clause->literals[0] = free_lit;
-	return unit_clause;
-}
 
 /******************************************************************************
 	Two literal watch algorithm for unit resolution
@@ -105,7 +112,7 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 	//assert(sat_state->num_literals_in_decision > 0);
 
 	// initialize the list of watched clauses
-	if(!literal_watched_initialized)
+	if(!INIT_LITERAL_WATCH)
 		intitialize_watching_clauses(sat_state);
 
 	BOOLEAN contradiction_flag = 0;
@@ -221,9 +228,6 @@ BOOLEAN two_literal_watch(SatState* sat_state){
 							contradiction_flag = 1;
 							printf(" Contradiction happens\n");
 							sat_state->conflict_clause = wclause;
-
-							//HOW CAN I GET BACK THE PAST ANTECEDENT!!!!
-
 
 							//TODO: why this cause double free --- > where should I free it!!
 //							if(pending_list != NULL && num_pending_lit != 0)

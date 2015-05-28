@@ -7,12 +7,12 @@
 
 #define _GNU_SOURCE
 #include "ParseDIMACS.h"
+#include "global.h"
 #include <string.h>
 #include <stdio.h>
 
 
 #define END_OF_CLAUSE_LINE 		0
-#define MALLOC_GROWTH_RATE 	   	2
 #define INCREASE_DECISION		5
 
 /******************

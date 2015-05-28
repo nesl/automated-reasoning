@@ -16,7 +16,7 @@ Lit* get_free_literal(SatState* sat_state) {
     Lit* nlit = sat_neg_literal(var);
     if(!sat_implied_literal(plit) && !sat_implied_literal(nlit)){
 #ifdef DEBUG
-    	printf("Decided Lit: %ld\n", plit->sindex);
+    	printf("MAIN: Decided Lit: %ld\n", plit->sindex);
     	return plit;
 #endif
     }
@@ -38,6 +38,9 @@ Clause* sat_aux(SatState* sat_state) {
   sat_undo_decide_literal(sat_state);
 
   if(learned!=NULL) { //there is a conflict
+#ifdef DEBUG
+	  printf("There is a conflict learnt clause: main test\n");
+#endif
     if(sat_at_assertion_level(learned,sat_state)) {
       learned = sat_assert_clause(learned,sat_state);
       if(learned==NULL) return sat_aux(sat_state); //try again

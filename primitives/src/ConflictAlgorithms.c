@@ -7,8 +7,7 @@
 
 #include "ConflictAlgorithms.h"
 #include "LiteralWatch.h"
-#define MALLOC_GROWTH_RATE 	   	2
-#define USE_UIP_LEARNT_CLAUSE	1
+#include "global.h"
 
 
 
@@ -29,6 +28,10 @@ static void update_variable_list(Clause* clause){
 
 
 static void update_delta_with_gamma(SatState* sat_state){
+
+#ifdef DEBUG
+	printf("Add gamma to delta: number of clauses in delta: %ld\n",sat_state->num_clauses_in_delta);
+#endif
 	//TODO: Do I really need to do this. I just need to update the watching clause lists for the literals. Keep this for now but check later
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
 			// needs to realloc the size
@@ -36,22 +39,36 @@ static void update_delta_with_gamma(SatState* sat_state){
 			sat_state->delta = (Clause*) realloc( sat_state->delta, sizeof(Clause) * (sat_state->max_size_list_delta));
 	}
 
-	sat_state->delta[sat_state->num_clauses_in_delta] = *(sat_state->alpha);
+	sat_state->delta[sat_state->num_clauses_in_delta] = *(sat_state->alpha); // copy the actual value
 
-	//TODO: Should I clear alpha here?
+	//TODO: Should I clear alpha here? Yes I should
+	sat_state->alpha = NULL;
+
+#ifdef DEBUG
+	printf("Cleared alpha\n");
+#endif
 
 	// update the watching literals L1 and L2
 	sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
 	sat_state->delta[sat_state->num_clauses_in_delta].L2 = sat_state->delta[sat_state->num_clauses_in_delta].literals[1];
-
+#ifdef DEBUG
+	printf("Update the watched literals of new clause\n");
+#endif
 
 	//update the state of the literals with that new watching clause
 	add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L1);
 	add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L2);
 
-	// update the index of the new added clause
-	sat_state->delta[sat_state->num_clauses_in_delta].cindex = sat_state->num_clauses_in_delta + 1;
+#ifdef DEBUG
+	printf("Add the new clause to the list of watching clauses\n");
+#endif
 
+	// update the index of the new added clause
+	sat_state->delta[sat_state->num_clauses_in_delta].cindex = sat_state->num_clauses_in_delta; //- 1 +1 ; // remember the indices are from 0 to n-1
+
+#ifdef DEBUG
+	printf("Index of the new clause: %ld\n",sat_state->delta[sat_state->num_clauses_in_delta].cindex);
+#endif
 
 	//update the clause list of the variable
 	update_variable_list(&sat_state->delta[sat_state->num_clauses_in_delta]);
@@ -68,6 +85,8 @@ void add_clause_to_gamma(SatState* sat_state){
 	}
 
 	sat_state->gamma[sat_state->num_clauses_in_gamma++] = *(sat_state->alpha);
+
+
 
 	update_delta_with_gamma(sat_state);
 }
@@ -203,17 +222,17 @@ static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
 	return predicate_value;
 }
 
-static void unit_resolution(Clause* clause, Clause* unit_clause, Clause* newclause){
-	// get the literal from the unit clause
-	Lit* lit = unit_clause->literals[0];
-
-	for(unsigned long i =0; i< clause->max_size_list_literals; i++){
-		if (clause->literals[i]->sindex == lit->num_watched_clauses)
-			continue;
-		else
-			add_literal_to_clause(lit, newclause);
-	}
-}
+//static void unit_resolution(Clause* clause, Clause* unit_clause, Clause* newclause){
+//	// get the literal from the unit clause
+//	Lit* lit = unit_clause->literals[0];
+//
+//	for(unsigned long i =0; i< clause->max_size_list_literals; i++){
+//		if (clause->literals[i]->sindex == lit->num_watched_clauses)
+//			continue;
+//		else
+//			add_literal_to_clause(lit, newclause);
+//	}
+//}
 
 
 static BOOLEAN is_fixed_point_reached(Clause* wl, SatState* sat_state, BOOLEAN use_UIP){
@@ -259,7 +278,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 	wl->is_subsumed = 0;
 	wl->max_size_list_literals = 1;
 	wl->num_literals_in_clause = 0;
-	wl->cindex = sat_state->num_clauses_in_delta ++ ; // the learnt clause will have the next index in delta
+	wl->cindex = sat_state->num_clauses_in_delta;// - 1 + 1; // the learnt clause will have the next index in delta (remember it is from 0 to n-1)
 
 	Clause* wl_1 = (Clause*) malloc(sizeof(Clause));
 	wl_1->literals = (Lit**) malloc(sizeof(Lit*) * (sat_state->conflict_clause->num_literals_in_clause)); // because at the beginning wl-1 is copied with conflict clause
@@ -304,6 +323,8 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 	} //end of while
 
 	sat_state->alpha = wl;
-	return wl;
 
+	//TODO: I have to clean wl and wl-1 somewhere
+
+	return wl;
 }

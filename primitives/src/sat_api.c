@@ -5,8 +5,7 @@
 #include "LiteralWatch.h"
 #include "VSIDS.h"
 #include "ConflictAlgorithms.h"
-
-#define MALLOC_GROWTH_RATE 	   	2
+#include "global.h"
 
 /* GLOBALS */
 BOOLEAN FLAG_CASE1_UNIT_RESOLUTION = 0;
@@ -319,11 +318,16 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	//TODO check the requirements in the comments
 	FLAG_CASE2_UNIT_RESOLUTION = 1;
 
+	update_vsids_scores(sat_state); // it uses alpha
+
 	//learn clause
 	// update the gamma list with the new alpha (just for performance analysis)
-	add_clause_to_gamma(sat_state);
+#ifdef DEBUG
+	printf("Add clause to gamma: %ld\n", clause->cindex);
+#endif
+	add_clause_to_gamma(sat_state); // it added alpha to gamma and clears it
 
-	update_vsids_scores(sat_state);
+
 
 
 	// decrease the current decision level of sat_state here before run unit resolution.
@@ -416,6 +420,9 @@ SatState* sat_state_new(const char* file_name) {
   else{
 	  // call the parser
 	  parseDIMACS(cnf_file, sat_state);
+#ifdef DEBUG
+	  printf("Number of clauses in delta = %ld\n",sat_state->num_clauses_in_delta);
+#endif
   }
 
   fclose(cnf_file);
@@ -575,26 +582,56 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 	printf("Undo unit resolution:\n");
 #endif
 	unsigned long num_reduced_decisions = 0;
-	// undo the set literals at the current decision level
-	for(unsigned long i = sat_state->num_literals_in_decision-1; i <= 0; i--){
-		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level){
-			sat_undo_clauses_state(sat_state->decisions[i]);
-			sat_state->decisions[i]->decision_level = 1;
-			sat_state->decisions[i]->LitState = 0;
-			sat_state->decisions[i]->LitValue = 'u';
+	// undo the set literals at the current decision level and its complement
+#ifdef DEBUG
+	printf("Number of literals in decisions = %ld\n", sat_state->num_literals_in_decision);
+#endif
+	//TODO: Check the sanity of this in the benchmarks: use sat_state->num_literals_in_decision-1 because it is the conflict literal so u don't need it any way here
+	for(unsigned long i = 0; i < sat_state->num_literals_in_decision-1; i++){
+#ifdef DEBUG
+		printf("Checking decision: %ld at level %ld\n",sat_state->decisions[i]->sindex, sat_state->decisions[i]->decision_level );
+#endif
+		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level ){
+#ifdef DEBUG
+			printf("clean literal: %ld\n",sat_state->decisions[i]->sindex);
+#endif
+			// to avoid cleaning the literal twice
+			//(because u may have the literal and its opposite in the decision at the contradiction)
+			// I have to add this if statement
+			if(sat_state->decisions[i]->LitState == 1){
+				Var* var = sat_literal_var(sat_state->decisions[i]);
+				var->antecedent = NULL;
+				sat_undo_clauses_state(sat_state->decisions[i]);
+
+				Lit* poslit = var->posLit;
+			//	poslit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals. This value will be overwritten later
+				poslit->LitState = 0;
+				poslit->LitValue = 'u';
+				poslit->num_watched_clauses = 0;
+
+
+				Lit* neglit = var->negLit;
+			//	neglit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals
+				neglit->LitState = 0;
+				neglit->LitValue = 'u';
+				neglit->num_watched_clauses = 0;
+			}
 			num_reduced_decisions ++;
 		}
 		//TODO (Performance enhancing):
 		// we are incrementing the decision level one by one so once the decision level
 		// of the literal is less than the current one then you can break. You don't have to
 		// continue the loop
-		if(sat_state->decisions[i]->decision_level < sat_state->current_decision_level){
-			break;
-		}
+//		if(sat_state->decisions[i]->decision_level < sat_state->current_decision_level){
+//			break;
+//		}
 
 	}
 	//update the current decision level
-	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions;
+	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions -1; // you reduce another one which is the implied driven literal at the end
+
+	//reset the initialization of the literal watch
+	clear_init_literal_watch();
 
 	//TODO: don't decrease this for now due to how the main function is constructed! the decision level is reduced after adding the asserting clause
 	//sat_state->current_decision_level -- ;
@@ -607,17 +644,17 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 //this function is called after sat_decide_literal() or sat_assert_clause() returns clause.
 //it is used to decide whether the sat state is at the right decision level for adding clause.
 BOOLEAN sat_at_assertion_level(const Clause* clause, const SatState* sat_state) {
-	//TODO: What is the need of this api actually???
-	unsigned long asserting_level = 0;
+#ifdef DEBUG
+	printf("At asserting level: current sat level: %ld\n",sat_state->current_decision_level );
+	printf("Number of literals in alpha: %ld\n",sat_state->alpha->num_literals_in_clause);
+#endif
+//will never go inside this loop because the asserting literal is already cleaned in the undo_decide_literal! dah!
 	for(unsigned long i = 0; i < sat_state->alpha->num_literals_in_clause; i++){
-		if(asserting_level < sat_state->alpha->literals[i]->decision_level)
-			asserting_level = sat_state->alpha->literals[i]->decision_level;
+		if(sat_state->alpha->literals[i]->decision_level == sat_state->current_decision_level)
+			return 1;
 	}
 
-	if(sat_state->current_decision_level == asserting_level)
-		return 1;
-	else
-		return 0;
+	return 0;
 }
 
 /******************************************************************************

@@ -45,4 +45,9 @@ void update_vsids_scores (SatState * sat_state)
 	{
 		alpha.literals[lidx]->vsids_score++;
 	}
+
+#ifdef DEBUG
+	printf("Finish updating scores!\n");
+#endif
+
 }
