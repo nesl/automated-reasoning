@@ -10,6 +10,20 @@
 #include "global.h"
 
 
+#ifdef DEBUG
+static BOOLEAN are_equivalent_clauses(Clause* c1, Clause* c2){
+	if(c1->num_literals_in_clause != c2->num_literals_in_clause)
+		return 0;
+
+	for(unsigned long i =0; i < c1->num_literals_in_clause; i++ ){
+		if(c1->literals[i]->sindex != c2->literals[i]->sindex)
+			return 0;
+	}
+
+	return 1;
+}
+#endif
+
 
 //update the clause list of the variable
 static void update_variable_list(Clause* clause){
@@ -137,11 +151,17 @@ static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
 	// algorithm
 	//get the resolvent first then add all the literals of alpha_l and wl_1 to wl unless it is equal to the resolvent
 
+
+
+
 	//TODO: actually it can be more than one resolvent it can be a list
 #ifdef DEBUG
 	printf("BEGIN Clause Resolution between clauses: \n");
 	print_clause(alpha_l);
 	print_clause(wl_1);
+
+	BOOLEAN are_equ = are_equivalent_clauses(alpha_l, wl_1);
+	assert(are_equ != 1);
 #endif
 
 
@@ -254,8 +274,16 @@ static BOOLEAN is_fixed_point_reached(Clause* wl, SatState* sat_state, BOOLEAN u
 			Lit* lit = wl->literals[i];
 			if(lit->decision_level == sat_state->current_decision_level){
 				count_asserting_literals++;
+#ifdef DEBUG
+				printf("Checking the fixed point rule\t");
+				printf("lit decision level: %ld, current decision level: %ld\n",lit->decision_level,sat_state->current_decision_level);
+#endif
 			}
 		}
+
+#ifdef DEBUG
+		printf("count asserting literals: %ld\n",count_asserting_literals);
+#endif
 		if(count_asserting_literals == 1) // is indeed an asserting clause // only one literal at the current decision level
 			reached = 1;
 
@@ -304,7 +332,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		for(unsigned long i=0; i< wl_1->num_literals_in_clause; i++){
 			Lit* lit = wl_1->literals[i];
 			if(is_predicate_hold(lit, sat_state)){
-				alpha_l = sat_literal_var(lit)->antecedent; // alpha_l will always be a unit clause
+				alpha_l = sat_literal_var(lit)->antecedent; // alpha_l will evaluate to a unit clause in the current setting
 				//break; // break for
 				//maybe continue
 				continue;
@@ -316,8 +344,11 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 
 #ifdef DEBUG
 		printf("Resolution of two clauses led to a new clause\n");
-		printf("The clause consists of: \n");
-		print_clause(wl);
+		printf("The clause consists of: ");
+		for(unsigned long i =0; i< wl->num_literals_in_clause; i++){
+			printf("%ld\t",wl->literals[i]->sindex);
+		}
+		printf("\n");
 #endif
 		if(is_fixed_point_reached(wl, sat_state, USE_UIP_LEARNT_CLAUSE) == 1) // is indeed an asserting clause // only one literal at the current decision level
 			fixed_point_achieved = 1;

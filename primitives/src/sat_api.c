@@ -34,6 +34,14 @@ void print_all_clauses(SatState* sat_state){
 	}
 	printf("---------------------------------\n");
 }
+
+void print_current_decisions(SatState* sat_state){
+	printf("Current decisions: ");
+	for(unsigned long i = 0; i< sat_state->num_literals_in_decision; i++){
+		printf("%ld\t", sat_state->decisions[i]->sindex);
+	}
+	printf("\n");
+}
 #endif
 
 /******************************************************************************
@@ -318,14 +326,7 @@ c2dSize sat_learned_clause_count(const SatState* sat_state) {
 //moreover, it should be called only if sat_at_assertion_level() succeeds
 Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
-	//TODO check the requirements in the comments
-
-	//run the initial case 1 if you learnt a unit clause
-	if(sat_state->alpha != NULL && sat_state->alpha->num_literals_in_clause == 1)
-		FLAG_CASE3_UNIT_RESOLUTION = 1;
-
-	else
-		FLAG_CASE2_UNIT_RESOLUTION = 1;
+	FLAG_CASE2_UNIT_RESOLUTION = 1;
 
 	update_vsids_scores(sat_state); // it uses alpha
 
@@ -333,6 +334,28 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	// update the gamma list with the new alpha (just for performance analysis)
 	add_clause_to_gamma(sat_state); // it adds alpha to gamma and clears it
 
+
+	// Check if the learnt clause is unit clause (the last added clause in delta) then add it directly to decisions
+	if(sat_state->delta[sat_state->num_clauses_in_delta -1].num_literals_in_clause == 1){
+		Clause* unit_clause = &sat_state->delta[sat_state->num_clauses_in_delta -1];
+#ifdef DEBUG
+		printf("sat_assert_clause: the learnt clause %ld is a unit clause with literal %ld\n", unit_clause->cindex, unit_clause->literals[0]->sindex );
+#endif
+		// a unit clause
+		Lit* unit_lit = unit_clause->literals[0];
+		//update the literal parameters (decide it)
+		//Set lit values
+		if(unit_lit->sindex < 0)
+			unit_lit->LitValue = 0;
+		else if (unit_lit->sindex > 0)
+			unit_lit->LitValue = 1;
+
+		unit_lit->decision_level = 1; // because it is unit (not a decision)
+		unit_lit->LitState = 1;
+
+		//add it in the decision list without incrementing the decision level
+		sat_state->decisions[sat_state->num_literals_in_decision++] = unit_lit;
+	}
 
 	// decrease the current decision level of sat_state here before run unit resolution.
 	// This is done here due to the way the main is constructed.
@@ -343,6 +366,9 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	printf("----- sat _assert_clause ---- before running unit resolution\n");
 	print_all_clauses(sat_state);
 #endif
+
+
+
 
 	BOOLEAN success = sat_unit_resolution(sat_state); //should use case 2 --> runs only on the decisions in the past
 
@@ -577,6 +603,7 @@ static BOOLEAN unit_resolution_case_1(SatState* sat_state){
 #ifdef DEBUG
 	printf("----- sat _decide_literal ---- after running unit resolution\n");
 	print_all_clauses(sat_state);
+	print_current_decisions(sat_state);
 #endif
 
 	return ret;
@@ -612,6 +639,7 @@ static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 #ifdef DEBUG
 	printf("----- sat _assert_clause ---- after running unit resolution\n");
 	print_all_clauses(sat_state);
+	print_current_decisions(sat_state);
 #endif
 
 	return  ret;

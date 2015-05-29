@@ -134,8 +134,8 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 #ifdef DEBUG
 		printf("--------------------------------------\n");
 		printf("Decision list now: ");
-		for(unsigned long i =0; i< num_decision_lit;i++){
-			printf("%ld\t", literals_in_decision[i]->sindex );
+		for(unsigned long j =0; j< num_decision_lit;j++){
+			printf("%ld\t", literals_in_decision[j]->sindex );
 		}
 		printf("\n");
 #endif
@@ -143,6 +143,9 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 		Lit* decided_literal = literals_in_decision[i];
 		Lit* resolved_literal = get_resolved_lit(decided_literal, sat_state);
 
+#ifdef DEBUG
+		printf("Resolved Literal: %ld\n", resolved_literal->sindex);
+#endif
 
 		//TODO: uncomment Update clauses state based on the decided literal
 		//sat_update_clauses_state(decided_literal);
@@ -158,9 +161,9 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 		}
 		else{
 			//Get the watched clauses for the resolved literal
-			for(unsigned long i = 0; i < resolved_literal->num_watched_clauses; i++){
+			for(unsigned long k = 0; k < resolved_literal->num_watched_clauses; k++){
 
-					Clause* wclause = sat_index2clause( resolved_literal->list_of_watched_clauses[i], sat_state);
+					Clause* wclause = sat_index2clause( resolved_literal->list_of_watched_clauses[k], sat_state);
 
 					//TODO: Check if this actually works to skip the subsumed clauses
 					//if(wclause->is_subsumed) continue;
@@ -168,10 +171,10 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 					Lit* free_lit = NULL;
 					// if unit (only one free)
 					unsigned long num_free_literals = 0;
-					for(unsigned long j = 0; j < wclause->num_literals_in_clause; j++){
-						if(sat_implied_literal(wclause->literals[j]) ==  0){
+					for(unsigned long l = 0; l < wclause->num_literals_in_clause; l++){
+						if(sat_implied_literal(wclause->literals[l]) ==  0){
 							num_free_literals++;
-							free_lit = wclause->literals[j];
+							free_lit = wclause->literals[l];
 						}
 					}
 
@@ -190,12 +193,15 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 #ifdef DEBUG
 							printf("free literal %ld\n",free_lit->sindex);
 							//print_clause(wclause);
-							printf("Antecedent: ");
+							printf("Antecedent: \n");
 							print_clause(sat_literal_var(free_lit)->antecedent);
 #endif
 						}
 						// the last free literal is the only free literal in this case
 						add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
+#ifdef DEBUG
+						printf("Add the free literal %ld to the pending list\n",free_lit->sindex);
+#endif
 						continue; // go to the next clause
 					}
 
@@ -206,7 +212,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 						// I have to check the other watched literal!? only if it is not a unit clause
 						Lit* the_other_watched_literal = NULL;
 
-						if(wclause->num_literals_in_clause > 2){
+						if(wclause->num_literals_in_clause > 1){
 							if(resolved_literal->sindex == wclause->L1->sindex)
 								the_other_watched_literal = wclause->L2;
 							else if(resolved_literal->sindex == wclause->L2->sindex)
@@ -236,7 +242,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 							}
 							else if(sat_is_resolved_literal(unit_lit)){ // this should never happen unless unsat // you can't have unit clause that is not asserted
 								contradiction_flag = 1;
-								printf("-------------Contradiction happens with clause: %ld\n",wclause->cindex);
+								printf("----------Unit Clause---Contradiction happens with clause: %ld\n",wclause->cindex);
 								sat_state->conflict_clause = wclause;
 								break;
 							}
@@ -245,9 +251,9 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 					}
 
 					// find another literal to watch that is free
-					for(unsigned long j = 0; j < wclause->num_literals_in_clause; j++){
-						if((!sat_implied_literal(wclause->literals[j])) && wclause->literals[j] != wclause->L1 && wclause->literals[j] != wclause->L2){
-							Lit* new_watched_lit = wclause->literals[j];
+					for(unsigned long z = 0; z < wclause->num_literals_in_clause; z++){
+						if((!sat_implied_literal(wclause->literals[z])) && wclause->literals[z] != wclause->L1 && wclause->literals[z] != wclause->L2){
+							Lit* new_watched_lit = wclause->literals[z];
 							//add the watching clause to the free literal
 							add_watching_clause(wclause, new_watched_lit);
 
