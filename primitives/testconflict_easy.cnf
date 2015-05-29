@@ -1,0 +1,7 @@
+c test for conflict. CNF from example in the homework
+p cnf 5 4
+-1 -4 5 0
+-3 4 0
+-4 -5 0
+-2 3 4 0 
+c from here you know that var 1 is don't care
