@@ -1,5 +1,9 @@
 #include "sat_api.h"
 
+#include <time.h>
+#include <unistd.h>
+#include <stdio.h>
+
 
 /******************************************************************************
  * SAT solver 
@@ -129,6 +133,29 @@ int main(int argc, char* argv[]) {
 #endif
 
   sat_state_free(sat_state);
+
+	// print out system process time
+	printf("system clock  = %ju/%ju seconds\n", clock(), CLOCKS_PER_SEC);
+
+	// print out system peak memory usage time (VmPeak)
+	// NOTE: This is a hacky kind of operation
+	// This implementaion only works on Linux
+	// by use of the /proc filesystem
+	char * statm_filename;
+	asprintf(&statm_filename, "/proc/%d/statm", getpid());
+	FILE * statm_fp = fopen(statm_filename, "r");
+	free(statm_filename);
+
+	char * statm_buf = NULL;
+	size_t n = 0;
+	getdelim(&statm_buf, &n, ' ', statm_fp);
+
+	long int pages = strtol(statm_buf, NULL, 10);
+	printf("system vmpeak = %d pages\n", pages);
+
+	free(statm_buf);
+
+	fclose(statm_fp);
   return 0;
 }
 
