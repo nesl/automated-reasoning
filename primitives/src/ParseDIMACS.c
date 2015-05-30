@@ -57,6 +57,24 @@ void add_watching_clause(Clause* clause, Lit* lit){
 	lit->list_of_watched_clauses[lit->num_watched_clauses] = index;
 
 	lit->num_watched_clauses ++;
+
+//Set the flag for this clause
+	if(lit->num_dirty_watched_clauses >= lit->max_size_list_dirty_watched_clauses){
+			// needs to realloc the size
+			lit->max_size_list_dirty_watched_clauses =(lit->num_dirty_watched_clauses * MALLOC_GROWTH_RATE);
+			lit->list_of_dirty_watched_clauses = (unsigned long*) realloc( lit->list_of_dirty_watched_clauses, sizeof(unsigned long) * lit->max_size_list_dirty_watched_clauses);
+	}
+
+	lit->list_of_dirty_watched_clauses[lit->num_dirty_watched_clauses] = 1;
+
+	lit->num_dirty_watched_clauses ++;
+
+
+
+}
+void remove_watching_clause(unsigned long index, Lit* lit){
+	// Clear the flag (marked dirty)
+	lit->list_of_dirty_watched_clauses[index] = 0;
 }
 
 
@@ -125,6 +143,9 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].negLit->num_watched_clauses = 0;
 		sat_state->variables[i].negLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
 		sat_state->variables[i].negLit->max_size_list_watched_clauses = 1;
+		sat_state->variables[i].negLit->num_dirty_watched_clauses = 0;
+		sat_state->variables[i].negLit->list_of_dirty_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
+		sat_state->variables[i].negLit->max_size_list_dirty_watched_clauses = 1;
 		sat_state->variables[i].negLit->num_containing_clause = 0;
 		sat_state->variables[i].negLit->list_of_containing_clauses = (unsigned long*) malloc(sizeof(unsigned long));// will be realloc when it expands
 		sat_state->variables[i].negLit->max_size_list_contatining_clauses = 1;
@@ -134,13 +155,16 @@ static int parseProblemLine(char* line, SatState* sat_state){
 
 		/* Initialize positive literals */
 		sat_state->variables[i].posLit = (Lit*) malloc(sizeof(Lit) );
-		sat_state->variables[i].posLit->sindex = i+1;						// negative literals start with -1 to -n;
+		sat_state->variables[i].posLit->sindex = i+1;						// positive literals start with 1 to n;
 		sat_state->variables[i].posLit->LitState = 0; 						// free literal
 		sat_state->variables[i].posLit->decision_level = 1;
 		sat_state->variables[i].posLit->LitValue = 'u';
 		sat_state->variables[i].posLit->num_watched_clauses = 0;// initialize to free literal
 		sat_state->variables[i].posLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
 		sat_state->variables[i].posLit->max_size_list_watched_clauses = 1;
+		sat_state->variables[i].posLit->num_dirty_watched_clauses = 0;
+		sat_state->variables[i].posLit->list_of_dirty_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
+		sat_state->variables[i].posLit->max_size_list_dirty_watched_clauses = 1;
 		sat_state->variables[i].posLit->num_containing_clause = 0;
 		sat_state->variables[i].posLit->list_of_containing_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
 		sat_state->variables[i].posLit->max_size_list_contatining_clauses = 1;

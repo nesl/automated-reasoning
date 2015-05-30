@@ -19,5 +19,6 @@ void parseDIMACS(FILE* cnf_file, SatState* sat_state);
 void add_clause_to_variable(Var* var, Clause* clause);
 void add_clause_to_literal(Lit* lit, Clause* clause);
 void add_watching_clause(Clause* clause, Lit* lit);
+void remove_watching_clause(unsigned long index, Lit* lit);
 
 #endif /* PARSEDIMACS_H_ */

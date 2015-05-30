@@ -161,8 +161,18 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 		else{
 			//Get the watched clauses for the resolved literal
 			for(unsigned long k = 0; k < resolved_literal->num_watched_clauses; k++){
+#ifdef DEBUG
+		printf("165   %ld\n",k);
+		print_all_clauses(sat_state);
+#endif
+					//check dirty flag
+					if(resolved_literal->list_of_dirty_watched_clauses[k] == 0) continue;
 
 					Clause* wclause = sat_index2clause( resolved_literal->list_of_watched_clauses[k], sat_state);
+#ifdef DEBUG
+		printf("170  -- %ld----%ld\n", wclause->cindex, resolved_literal->list_of_watched_clauses[k]);
+		print_all_clauses(sat_state);
+#endif
 
 					//TODO: Check if this actually works to skip the subsumed clauses
 					//TODO: Enhance: we can only get the watched clauses that are not subsumed to speed it up and to avoid checking the unit clause
@@ -178,7 +188,9 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 							free_lit = wclause->literals[l];
 						}
 					}
-
+#ifdef DEBUG
+		printf("188\n");
+#endif
 					if(num_free_literals == 1){
 						//I have a unit clause take an implication and update the antecedent
 						//TODO The antecedent is a unit clause!
@@ -197,15 +209,20 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 							printf("Antecedent: \n");
 							print_clause(sat_literal_var(free_lit)->antecedent);
 #endif
+
 						}
-						// the last free literal is the only free literal in this case and update its decision level
-						free_lit->decision_level = decided_literal->decision_level;
+
 						add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
 #ifdef DEBUG
 						printf("Add the free literal %ld to the pending list\n",free_lit->sindex);
 #endif
 						continue; // go to the next clause
+
 					}
+
+#ifdef DEBUG
+		printf("219\n");
+#endif
 
 					if (num_free_literals == 0){
 						//contradiction --> everything is resolved
@@ -235,7 +252,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 								continue;
 							}
 						}
-						else{ // unit clause
+						else{ //TODO: not tested unit clause
 							Lit* unit_lit = wclause->literals[0];
 							if(sat_is_asserted_literal(unit_lit)){
 								wclause->is_subsumed = 1;
@@ -251,13 +268,19 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 						}
 
 					}
+#ifdef DEBUG
+		printf("267\n");
+#endif
 
 					// find another literal to watch that is free
 					for(unsigned long z = 0; z < wclause->num_literals_in_clause; z++){
 						if((!sat_implied_literal(wclause->literals[z])) && wclause->literals[z] != wclause->L1 && wclause->literals[z] != wclause->L2){
 							Lit* new_watched_lit = wclause->literals[z];
+							//remove_watching_clause(k, resolved_literal);
+							resolved_literal->list_of_dirty_watched_clauses[k] = 0;
 							//add the watching clause to the free literal
 							add_watching_clause(wclause, new_watched_lit);
+
 
 							// remove the resolved literal from the watch and update the clause watch list
 							if(resolved_literal->sindex == wclause->L1->sindex)
@@ -270,12 +293,21 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 
 			} //end of for for watched clauses over this decided literal
 
-			if(num_pending_lit > 0){
+			if(num_pending_lit >0){
 			// Pass over the pending list and add the literals to the decision while maintaining the level
 				for(unsigned long i =0; i < num_pending_lit; i++){
 					// pending literal was an already watched clause so the associated list of watching clauses is already handled
 					// fix values of pending literal before putting in decision
 					Lit* pending_lit = pending_list[i];
+
+//					Var* corresponding_var = sat_literal_var(pending_lit);
+//					if(sat_instantiated_var(corresponding_var) == 1 && contradiction_flag == 0){
+//						contradiction_flag = 1;
+//						sat_state->conflict_clause = corresponding_var->antecedent;
+////#ifdef DEBUG
+////						printf("Is instantiated var:\n");
+////#endif
+//					}
 
 					if(pending_lit->sindex <0){
 						pending_lit->LitValue = 0;
@@ -291,14 +323,16 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 //
 //					}
 
-					//TODO: the decision level should be the same as the level of the antecedent not the current level
-					//pending_lit->decision_level = sat_state->current_decision_level;
+					//TODO: the decision level should be the same as the max level of the antecedent not the current level.
+					pending_lit->decision_level = sat_state->current_decision_level;
 
 					//update the decision list
 					sat_state->decisions[sat_state->num_literals_in_decision++] = pending_lit;
 
 					//update list of literals in last decision because this is the main loop
 					literals_in_decision[num_decision_lit++] = pending_lit;
+
+
 				}
 
 //				//free pending list for the next round

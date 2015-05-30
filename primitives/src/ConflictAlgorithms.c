@@ -16,6 +16,8 @@ static BOOLEAN are_equivalent_clauses(Clause* c1, Clause* c2){
 	if(c1->num_literals_in_clause != c2->num_literals_in_clause)
 		return 0;
 
+	//TODO sort the two clauses first before checking
+
 	for(unsigned long i =0; i < c1->num_literals_in_clause; i++ ){
 		if(c1->literals[i]->sindex != c2->literals[i]->sindex)
 			return 0;
@@ -47,27 +49,11 @@ static void update_variable_and_literal_list(Clause* clause){
 
 static void update_delta_with_alpha(SatState* sat_state){
 
-#ifdef DEBUG
-	printf("Add gamma to delta: number of clauses in delta: %ld\n",sat_state->num_clauses_in_delta);
-	print_all_clauses(sat_state);
-#endif
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
-#ifdef DEBUG
-	printf("56\n");
-	print_all_clauses(sat_state);
-#endif
 			// needs to realloc the size
 			sat_state->max_size_list_delta =(sat_state->num_clauses_in_delta * MALLOC_GROWTH_RATE);
-#ifdef DEBUG
-	printf("62\n");
-	print_all_clauses(sat_state);
-#endif
 			sat_state->delta = (Clause*) realloc( sat_state->delta, sizeof(Clause) * (sat_state->max_size_list_delta));
 	}
-#ifdef DEBUG
-	printf("60\n");
-	print_all_clauses(sat_state);
-#endif
 	sat_state->delta[sat_state->num_clauses_in_delta] = *(sat_state->alpha); // copy the actual value
 
 	// update the watching literals L1 and L2 be careful that a learnt clause can be a unit clause
@@ -86,11 +72,6 @@ static void update_delta_with_alpha(SatState* sat_state){
 	}
 
 #ifdef DEBUG
-	printf("81\n");
-	print_all_clauses(sat_state);
-#endif
-
-#ifdef DEBUG
 	printf("Update the watched literals of new clause\n");
 #endif
 
@@ -101,17 +82,7 @@ static void update_delta_with_alpha(SatState* sat_state){
 	printf("Index of the new clause: %ld\n",sat_state->delta[sat_state->num_clauses_in_delta].cindex);
 #endif
 
-	//update the clause list of the variable
-#ifdef DEBUG
-	printf("----------------------------------");
-	printf("Update delta with alpha before updating literals clauses:\n");
-	print_all_clauses(sat_state);
-#endif
 	update_variable_and_literal_list(&sat_state->delta[sat_state->num_clauses_in_delta]);
-#ifdef DEBUG
-	printf("after updating literals clauses:\n");
-	print_all_clauses(sat_state);
-#endif
 
 	if(sat_state->num_clauses_in_gamma >= sat_state->max_size_list_gamma){
 		// needs to realloc the size
@@ -132,15 +103,13 @@ static void update_delta_with_alpha(SatState* sat_state){
 
 #ifdef DEBUG
 	printf("Cleared alpha\n");
+	print_all_clauses(sat_state);
 #endif
-
-
 }
 
 
 /***** Gamma is not used afterwards this is just for debugging and testing of performance so actually Gamma keeps a copy of its own clauses away from delta*/
 void add_clause_to_gamma(SatState* sat_state){
-
 	update_delta_with_alpha(sat_state);
 }
 
@@ -181,11 +150,6 @@ static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
 
 	// algorithm
 	//get the resolvent first then add all the literals of alpha_l and wl_1 to wl unless it is equal to the resolvent
-
-
-
-
-	//TODO: actually it can be more than one resolvent it can be a list
 #ifdef DEBUG
 	printf("BEGIN Clause Resolution between clauses: \n");
 	print_clause(alpha_l);
@@ -253,6 +217,7 @@ static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
 	// at the end deallocate the Var**
 	// TODO: do I need deep clean here?
 	FREE(resolvent_var_list);
+
 }
 
 static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
@@ -260,12 +225,17 @@ static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
 	 wl_1->cindex = conflict_clause->cindex;
 	 wl_1->is_subsumed = conflict_clause->is_subsumed;
 	 wl_1->mark = conflict_clause->mark;
-//	 wl_1->L1 = conflict_clause->L1;
-//	 wl_1->L2 = conflict_clause->L2; // this is not correct because the learning clause can be unit clause
 	 wl_1->max_size_list_literals = conflict_clause->max_size_list_literals;
 	 wl_1->num_literals_in_clause = conflict_clause->num_literals_in_clause;
-	 wl_1->L1 = NULL; //TODO: not fixed for unit learnt clause!
-	 wl_1->L2 = NULL;
+
+	 if(conflict_clause->L1 != NULL)
+		 wl_1->L1 = conflict_clause->L1;
+	 else wl_1->L1 = NULL;
+
+	 if(conflict_clause->L2 != NULL)
+		 wl_1->L2 = conflict_clause->L2;
+	 else wl_1->L2 = NULL;
+
 
 	 for(unsigned long i =0; i< conflict_clause->num_literals_in_clause; i++){
 		wl_1->literals[i] = conflict_clause->literals[i];
@@ -296,7 +266,7 @@ static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
 //}
 
 
-static BOOLEAN is_fixed_point_reached(Clause* wl, SatState* sat_state, BOOLEAN use_UIP){
+static BOOLEAN is_termination_condition_hold(Clause* wl, SatState* sat_state, BOOLEAN use_UIP){
 	BOOLEAN reached = 0;
 
 	if(use_UIP){
@@ -306,7 +276,7 @@ static BOOLEAN is_fixed_point_reached(Clause* wl, SatState* sat_state, BOOLEAN u
 			if(lit->decision_level == sat_state->current_decision_level){
 				count_asserting_literals++;
 #ifdef DEBUG
-				printf("Checking the fixed point rule\t");
+				printf("Checking the termination condition\t");
 				printf("lit decision level: %ld, current decision level: %ld\n",lit->decision_level,sat_state->current_decision_level);
 #endif
 			}
@@ -333,6 +303,21 @@ static BOOLEAN is_fixed_point_reached(Clause* wl, SatState* sat_state, BOOLEAN u
 	}
 }
 
+static void learn_trivial_clause(Clause* wl, SatState* sat_state){
+
+	//TODO: check the stopping condition. I stopped at the before last in decision because u usually have double opposite assignment
+	for(unsigned long i =0; i < sat_state->num_literals_in_decision-1; i++){
+		Lit* lit = sat_state->decisions[i];
+		Lit* addedlit = NULL;
+		if(lit->sindex > 0)
+			addedlit = (sat_literal_var(lit))->negLit;
+		else if (lit->sindex < 0)
+			addedlit = (sat_literal_var(lit))->posLit;
+
+
+		add_literal_to_clause(addedlit, wl);
+	}
+}
 
 /******************************************************************************
 	First UIP algorithm for the non-chronological backtracking using the
@@ -348,6 +333,8 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 	wl->max_size_list_literals = 1;
 	wl->num_literals_in_clause = 0;
 	wl->cindex = sat_state->num_clauses_in_delta;// - 1 + 1; // the learnt clause will have the next index in delta (remember it is from 0 to n-1)
+	wl->L1 = NULL;
+	wl->L2 = NULL;
 
 	Clause* wl_1 = (Clause*) malloc(sizeof(Clause));
 	wl_1->literals = (Lit**) malloc(sizeof(Lit*) * (sat_state->conflict_clause->num_literals_in_clause)); // because at the beginning wl-1 is copied with conflict clause
@@ -370,11 +357,22 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 			}
 		}
 
-		assert(alpha_l != NULL);
+// added a part in the algorithm to compromise for the the non backtracking to the assertion level
+		if(alpha_l != NULL){
+			// resolve the conflict clause with the asserted variable antecedent and update the conflict clause (wl)
+			// for the next loop
+#ifdef DEBUG
+			printf("alpha_l != NULL\n");
+#endif
+			resolution(alpha_l, wl_1, wl);
+		}
+		else{
+#ifdef DEBUG
+			printf("alpha == NULL");
+#endif
+			learn_trivial_clause(wl, sat_state);
+		}
 
-		// resolve the conflict clause with the asserted variable antecedent and update the conflict clause (wl)
-		// for the next loop
-		resolution(alpha_l, wl_1, wl);
 
 #ifdef DEBUG
 		printf("Resolution of two clauses led to a new clause\n");
@@ -384,7 +382,13 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		}
 		printf("\n");
 #endif
-		if(is_fixed_point_reached(wl, sat_state, USE_UIP_LEARNT_CLAUSE) == 1) // is indeed an asserting clause // only one literal at the current decision level
+
+		//check fixed point
+//		if(are_equivalent_clauses(wl, wl_1)){
+//			fixed_point_achieved =1;
+//		}
+//		else
+		if(is_termination_condition_hold(wl, sat_state, USE_UIP_LEARNT_CLAUSE) == 1) // is indeed an asserting clause // only one literal at the current decision level
 			fixed_point_achieved = 1;
 		else{
 			//switch the pointers
@@ -394,6 +398,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 			wl = tmp;
 			wl->max_size_list_literals = 1;
 			wl->num_literals_in_clause = 0;
+			print_clause(wl);
 		}
 	} //end of while
 

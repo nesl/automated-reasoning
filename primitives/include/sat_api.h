@@ -110,6 +110,11 @@ struct literal {
 	unsigned long num_watched_clauses;
 	unsigned long max_size_list_watched_clauses;
 
+	/** for the dirty flags of watching clause to avoid removing form the original list */
+	unsigned long* list_of_dirty_watched_clauses;  			// List of clause indices that are flagged dirty for watching this literal
+	unsigned long num_dirty_watched_clauses;
+	unsigned long max_size_list_dirty_watched_clauses;
+
 	/** To facilitate setting the subsumed clause add a list of clauses containing this literal */
 	unsigned long* list_of_containing_clauses;
 	unsigned long num_containing_clause;
@@ -155,7 +160,7 @@ struct clause {
  * condition/uncondition variables, perform unit resolution, and so on ...
  ******************************************************************************/
 
-typedef struct sat_state_t {
+struct sat_state_t {
 
 	  Clause* delta;
 	  unsigned long* gamma; // Gamma is just a list of indices of clauses that were added to delta to avoid having double copy of the same clause
@@ -182,7 +187,7 @@ typedef struct sat_state_t {
 	  Clause* conflict_clause; // if contradiction happen at the current state then this clause is the cause of contradiction
 
 
-} SatState;
+};
 
 /******************************************************************************
  * API: 

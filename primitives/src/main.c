@@ -58,6 +58,11 @@ Clause* sat_aux(SatState* sat_state) {
 BOOLEAN sat(SatState* sat_state) {
   BOOLEAN ret = 0;
   if(sat_unit_resolution(sat_state)) ret = (sat_aux(sat_state)==NULL? 1: 0);
+#ifdef DEBUG
+	  for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
+		  printf("%ld\n",sat_state->decisions[i]->sindex);
+	  }
+#endif
   sat_undo_unit_resolution(sat_state); // everything goes back to the initial state
   return ret;
 }

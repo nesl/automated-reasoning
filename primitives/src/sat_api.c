@@ -16,30 +16,53 @@ BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 1;  //TODO: set this to 1 in the final vers
 #ifdef DEBUG
 void print_clause(Clause* clause){
 	printf("clause index %ld:\t", clause->cindex);
+	//printf("num literals in a clause (%ld): ",clause->num_literals_in_clause);
 	for(unsigned long i = 0; i < clause->num_literals_in_clause; i++){
 		printf("%ld(",clause->literals[i]->sindex);
+		//printf(" num of containing clause %ld  ,",clause->literals[i]->num_containing_clause);
 		for(unsigned long j =0; j < clause->literals[i]->num_containing_clause; j++){
 			printf("%ld,", clause->literals[i]->list_of_containing_clauses[j]);
 		}
 		printf(")\t");
 	}
 
+
+//	if(clause->L1 != NULL)
+//		printf("Watching over L1: %ld\t", clause->L1->sindex);
+//	if(clause->L2 != NULL)
+//		printf("Watching over L2: %ld", clause->L2->sindex);
+
+
 	if(clause->L1 != NULL && clause->L2!=NULL)
 		printf("Watching over: %ld, %ld", clause->L1->sindex, clause->L2->sindex);
 	else if(clause->L1 != NULL && clause->L2 == NULL)
 		printf("Watching over: %ld", clause->L1->sindex);
 
+	printf("\n");
+}
 
-
+void print_watching_clauses_in_list(Lit* lit){
+	printf("watching clauses on lit:%ld, ", lit->sindex);
+	for(unsigned long d = 0; d < lit->num_watched_clauses; d++){
+		printf("%ld\t",lit->list_of_watched_clauses[d]);
+	}
 	printf("\n");
 }
 
 void print_all_clauses(SatState* sat_state){
 	printf("---------------------------------\n");
-	printf("Debugging all clauses: \n");
+	printf("Debugging all clauses: at level %ld\n", sat_state->current_decision_level);
 	for(unsigned long i =0; i< sat_state->num_clauses_in_delta; i++){
 		print_clause(&sat_state->delta[i]);
 	}
+
+//	for(unsigned long i =0; i<sat_state->num_variables_in_cnf; i++){
+//		Var* var = &sat_state->variables[i];
+//		Lit* poslit = var->posLit;
+//		print_watching_clauses_in_list(poslit);
+//		Lit* neglit = var->negLit;
+//		print_watching_clauses_in_list(neglit);
+//	}
 	printf("---------------------------------\n");
 }
 
@@ -96,7 +119,7 @@ Var* sat_literal_var(const Lit* lit) {
 //a variable is instantiated either by decision or implication (by unit resolution)
 BOOLEAN sat_instantiated_var(const Var* var) {
 	// if the positive literal and the negative literal of the variable are set then the variable is instantiated
-	if(var->negLit->LitState == 1 && var->posLit->LitState == 1)
+	if(var->negLit->LitState == 1 || var->posLit->LitState == 1)
 		return 1;
 	else
 		return 0;
@@ -402,12 +425,24 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 //added API: Update the state of the clause if a literal is decided or implied i.e. asserted
 void sat_update_clauses_state(Lit* lit, SatState* sat_state){
 #ifdef DEBUG
-	print_all_clauses(sat_state);
+	printf("405\n");
 #endif
 	if(sat_is_asserted_literal(lit)){
+#ifdef DEBUG
+	printf("409\n");
+#endif
 		for(unsigned long i =0; i<lit->num_containing_clause; i++){
+#ifdef DEBUG
+	printf("413   %ld\n",i);
+#endif
 			Clause* clause = sat_index2clause(lit->list_of_containing_clauses[i], sat_state);
+#ifdef DEBUG
+	printf("417   %ld\n",i);
+#endif
 			clause->is_subsumed = 1;
+#ifdef DEBUG
+	printf("421   %ld\n",i);
+#endif
 #ifdef DEBUG
 			print_all_clauses(sat_state);
 			printf("Clause: %ld is subsumed now\n", clause->cindex);
@@ -529,6 +564,7 @@ void variable_cleanup (Var * variable) {
 
 void literal_free (Lit * literal) {
 	FREE(literal->list_of_watched_clauses);
+	FREE(literal->list_of_dirty_watched_clauses);
 	FREE(literal->list_of_containing_clauses);
 
 	// no need to free the antecedent clause though,
@@ -584,12 +620,16 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 
 }
 static BOOLEAN unit_resolution_case_1(SatState* sat_state){
+#ifdef DEBUG
+	printf("Unit resolution case 1\n");
+#endif
 	// This is called after decide literal
 		FLAG_CASE1_UNIT_RESOLUTION = 0;
 
 
 		//prepare the list of literals on which the unit resolution will run
 		//loop on all decided literals that have the same last level
+		//TODO: do I really need to malloc
 		Lit** literals_in_last_decision = (Lit**)malloc(sizeof(Lit*));
 		unsigned long max_size_last_decision_list = 1;
 		unsigned long num_last_decision_lit = 0;
@@ -637,29 +677,32 @@ static BOOLEAN unit_resolution_case_1(SatState* sat_state){
 static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 	// this is called after adding an asserting clause
 	//reset the flag
+#ifdef DEBUG
+	printf("Unit resolution case 2\n");
+#endif
 	FLAG_CASE2_UNIT_RESOLUTION = 0;
 
 	//prepare the list of literals on which the unit resolution will run
-	Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision );
-	unsigned long max_size_decision_list = 1;
-	unsigned long num_decision_lit = 0;
-
+//	Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision );
+//	unsigned long max_size_decision_list = 1;
+//	unsigned long num_decision_lit = 0;
+//
 
 	//pass all the decision list again because the last level is cleared after the contradiction
-	literals_in_decision = sat_state->decisions;
-	max_size_decision_list = sat_state->num_literals_in_decision; // for now just put max size = num_literals
-	num_decision_lit = sat_state->num_literals_in_decision;
+//	literals_in_decision = sat_state->decisions;
+//	max_size_decision_list = sat_state->num_literals_in_decision; // for now just put max size = num_literals
+//	num_decision_lit = sat_state->num_literals_in_decision;
 
 
 #ifdef DEBUG
 	printf("Decisions in the list for the two literal watch: ");
-	for(unsigned long i =0; i<num_decision_lit; i++){
-		printf("%ld\t", literals_in_decision[i]->sindex);
+	for(unsigned long i =0; i<sat_state->num_literals_in_decision; i++){
+		printf("%ld\t", sat_state->decisions[i]->sindex);
 	}
 	printf("\n");
 #endif
 
-	BOOLEAN ret = two_literal_watch(sat_state,literals_in_decision, num_decision_lit, max_size_decision_list);
+	BOOLEAN ret = two_literal_watch(sat_state,sat_state->decisions, sat_state->num_literals_in_decision,sat_state->num_literals_in_decision );
 
 #ifdef DEBUG
 	printf("----- sat _assert_clause ---- after running unit resolution\n");
@@ -672,6 +715,9 @@ static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 }
 
 static BOOLEAN unit_resolution_case_3(SatState* sat_state){
+#ifdef DEBUG
+	printf("Unit resolution case 3\n");
+#endif
 	//Reset the flag in this case because I don't want to execute this unless you have a unit clause
 	FLAG_CASE3_UNIT_RESOLUTION = 0;
 
@@ -706,12 +752,12 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 	else{
 		//prepare the list of literals on which the unit resolution will run
 		//TODO: Do I really need to malloc
-		Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision);
-		unsigned long max_size_decision_list = sat_state->num_literals_in_decision; // max_size = num_literals for now
-		unsigned long num_decision_lit = sat_state->num_literals_in_decision;
+//		Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision);
+//		unsigned long max_size_decision_list = sat_state->num_literals_in_decision; // max_size = num_literals for now
+//		unsigned long num_decision_lit = sat_state->num_literals_in_decision;
 
-		literals_in_decision = sat_state->decisions;
-		return two_literal_watch(sat_state, literals_in_decision, num_decision_lit, max_size_decision_list);
+		//literals_in_decision = sat_state->decisions;
+		return two_literal_watch(sat_state, sat_state->decisions, sat_state->num_literals_in_decision, sat_state->num_literals_in_decision);
 	}
 
 }
@@ -742,12 +788,14 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 	// undo the set literals at the current decision level and its complement
 #ifdef DEBUG
 	printf("Number of literals in decisions = %ld\n", sat_state->num_literals_in_decision);
+	print_all_clauses(sat_state);
 #endif
 	//TODO: Check the sanity of this in the benchmarks: use sat_state->num_literals_in_decision-1 because it is the conflict literal so u don't need it any way here
-	for(unsigned long i = 0; i < sat_state->num_literals_in_decision-1; i++){
+	for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
 #ifdef DEBUG
 		printf("Checking decision: %ld at level %ld\n",sat_state->decisions[i]->sindex, sat_state->decisions[i]->decision_level );
 #endif
+
 		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level ){
 #ifdef DEBUG
 			printf("clean literal: %ld\n",sat_state->decisions[i]->sindex);
@@ -785,7 +833,7 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 
 	}
 	//update the current decision level
-	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions -1; // you reduce another one which is the implied driven literal at the end
+	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions; // you reduce another one which is the implied driven literal at the end
 
 	//reset the initialization of the literal watch
 	//clear_init_literal_watch();
