@@ -7,6 +7,7 @@
 
 #include "ConflictAlgorithms.h"
 #include "LiteralWatch.h"
+#include "ParseDIMACS.h" //for the add_watching_clause api
 #include "global.h"
 
 
@@ -26,31 +27,47 @@ static BOOLEAN are_equivalent_clauses(Clause* c1, Clause* c2){
 
 
 //update the clause list of the variable
-static void update_variable_list(Clause* clause){
+static void update_variable_and_literal_list(Clause* clause){
 	for(unsigned long i = 0; i< clause->num_literals_in_clause; i++){
+		add_clause_to_literal(clause->literals[i], clause);
+
 		Var* var = sat_literal_var(clause->literals[i]);
-		if(var->num_of_clauses_of_variables >= var->max_size_list_of_clause_of_variables){
+		add_clause_to_variable(var, clause);
 
-			var->max_size_list_of_clause_of_variables =(var->num_of_clauses_of_variables * MALLOC_GROWTH_RATE);
-			var->list_clause_of_variables = (Clause**) realloc( var->list_clause_of_variables, sizeof(Clause) * (var->max_size_list_of_clause_of_variables));
-		}
-
-		var->list_clause_of_variables[var->num_of_clauses_of_variables++] = clause;
-
+		//		if(var->num_of_clauses_of_variables >= var->max_size_list_of_clause_of_variables){
+		//
+		//			var->max_size_list_of_clause_of_variables =(var->num_of_clauses_of_variables * MALLOC_GROWTH_RATE);
+		//			var->list_clause_of_variables = (Clause**) realloc( var->list_clause_of_variables, sizeof(Clause) * (var->max_size_list_of_clause_of_variables));
+		//		}
+		//
+		//		var->list_clause_of_variables[var->num_of_clauses_of_variables++] = clause;
 	}
 }
+
 
 static void update_delta_with_alpha(SatState* sat_state){
 
 #ifdef DEBUG
 	printf("Add gamma to delta: number of clauses in delta: %ld\n",sat_state->num_clauses_in_delta);
+	print_all_clauses(sat_state);
 #endif
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
+#ifdef DEBUG
+	printf("56\n");
+	print_all_clauses(sat_state);
+#endif
 			// needs to realloc the size
 			sat_state->max_size_list_delta =(sat_state->num_clauses_in_delta * MALLOC_GROWTH_RATE);
+#ifdef DEBUG
+	printf("62\n");
+	print_all_clauses(sat_state);
+#endif
 			sat_state->delta = (Clause*) realloc( sat_state->delta, sizeof(Clause) * (sat_state->max_size_list_delta));
 	}
-
+#ifdef DEBUG
+	printf("60\n");
+	print_all_clauses(sat_state);
+#endif
 	sat_state->delta[sat_state->num_clauses_in_delta] = *(sat_state->alpha); // copy the actual value
 
 	// update the watching literals L1 and L2 be careful that a learnt clause can be a unit clause
@@ -69,6 +86,11 @@ static void update_delta_with_alpha(SatState* sat_state){
 	}
 
 #ifdef DEBUG
+	printf("81\n");
+	print_all_clauses(sat_state);
+#endif
+
+#ifdef DEBUG
 	printf("Update the watched literals of new clause\n");
 #endif
 
@@ -80,7 +102,16 @@ static void update_delta_with_alpha(SatState* sat_state){
 #endif
 
 	//update the clause list of the variable
-	update_variable_list(&sat_state->delta[sat_state->num_clauses_in_delta]);
+#ifdef DEBUG
+	printf("----------------------------------");
+	printf("Update delta with alpha before updating literals clauses:\n");
+	print_all_clauses(sat_state);
+#endif
+	update_variable_and_literal_list(&sat_state->delta[sat_state->num_clauses_in_delta]);
+#ifdef DEBUG
+	printf("after updating literals clauses:\n");
+	print_all_clauses(sat_state);
+#endif
 
 	if(sat_state->num_clauses_in_gamma >= sat_state->max_size_list_gamma){
 		// needs to realloc the size
@@ -160,8 +191,8 @@ static void resolution(Clause* alpha_l, Clause* wl_1, Clause* wl){
 	print_clause(alpha_l);
 	print_clause(wl_1);
 
-	BOOLEAN are_equ = are_equivalent_clauses(alpha_l, wl_1);
-	assert(are_equ != 1);
+	//BOOLEAN are_equ = are_equivalent_clauses(alpha_l, wl_1);
+	//assert(are_equ != 1);
 #endif
 
 
@@ -338,6 +369,9 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 				continue;
 			}
 		}
+
+		assert(alpha_l != NULL);
+
 		// resolve the conflict clause with the asserted variable antecedent and update the conflict clause (wl)
 		// for the next loop
 		resolution(alpha_l, wl_1, wl);

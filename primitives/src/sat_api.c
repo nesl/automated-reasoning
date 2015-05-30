@@ -17,12 +17,20 @@ BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 1;  //TODO: set this to 1 in the final vers
 void print_clause(Clause* clause){
 	printf("clause index %ld:\t", clause->cindex);
 	for(unsigned long i = 0; i < clause->num_literals_in_clause; i++){
-		printf("%ld\t",clause->literals[i]->sindex);
+		printf("%ld(",clause->literals[i]->sindex);
+		for(unsigned long j =0; j < clause->literals[i]->num_containing_clause; j++){
+			printf("%ld,", clause->literals[i]->list_of_containing_clauses[j]);
+		}
+		printf(")\t");
 	}
+
 	if(clause->L1 != NULL && clause->L2!=NULL)
 		printf("Watching over: %ld, %ld", clause->L1->sindex, clause->L2->sindex);
 	else if(clause->L1 != NULL && clause->L2 == NULL)
 		printf("Watching over: %ld", clause->L1->sindex);
+
+
+
 	printf("\n");
 }
 
@@ -42,6 +50,15 @@ void print_current_decisions(SatState* sat_state){
 	}
 	printf("\n");
 }
+
+void print_clause_containing_literal(Lit* lit){
+	printf("Clauses containing this literal: %ld:\t", lit->sindex);
+	for(unsigned long i =0; i< lit->num_containing_clause; i++){
+		printf("%ld\t", lit->list_of_containing_clauses[i]);
+	}
+	printf("\n");
+}
+
 #endif
 
 /******************************************************************************
@@ -88,8 +105,11 @@ BOOLEAN sat_instantiated_var(const Var* var) {
 //returns 1 if all the clauses mentioning the variable are subsumed, 0 otherwise
 BOOLEAN sat_irrelevant_var(const Var* var) {
 	c2dSize i;
+	SatState* sat_state = var->sat_state;
+
 	for(i =0; i < var->num_of_clauses_of_variables; i++){
-		if(sat_subsumed_clause(var->list_clause_of_variables[i] ))
+		Clause* clause = sat_index2clause(var->list_clause_of_variables[i], sat_state);
+		if(sat_subsumed_clause(clause))
 			continue;
 		else
 			break;
@@ -115,10 +135,11 @@ c2dSize sat_var_occurences(const Var* var) {
 //index starts from 0, and is less than the number of clauses mentioning the variable
 //this cannot be called on a variable that is not mentioned by any clause
 Clause* sat_clause_of_var(c2dSize index, const Var* var) {
+
 	assert(index < var->num_of_clauses_of_variables);
 
 	if(index < var->num_of_clauses_of_variables){
-		return var->list_clause_of_variables[index];
+		return sat_index2clause(var->list_clause_of_variables[index], var->sat_state) ;
 	}
 	else{
 		return NULL;
@@ -367,9 +388,6 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	print_all_clauses(sat_state);
 #endif
 
-
-
-
 	BOOLEAN success = sat_unit_resolution(sat_state); //should use case 2 --> runs only on the decisions in the past
 
 
@@ -381,23 +399,28 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 }
 
 
-//added API: Update the state of the clause if a literal is decided or implied
-void sat_update_clauses_state(Lit* lit){
+//added API: Update the state of the clause if a literal is decided or implied i.e. asserted
+void sat_update_clauses_state(Lit* lit, SatState* sat_state){
+#ifdef DEBUG
+	print_all_clauses(sat_state);
+#endif
 	if(sat_is_asserted_literal(lit)){
-		Var* corresponding_var = lit->variable;
-		for(unsigned long i =0; i<corresponding_var->num_of_clauses_of_variables; i++){
-			corresponding_var->list_clause_of_variables[i]->is_subsumed = 1;
+		for(unsigned long i =0; i<lit->num_containing_clause; i++){
+			Clause* clause = sat_index2clause(lit->list_of_containing_clauses[i], sat_state);
+			clause->is_subsumed = 1;
+#ifdef DEBUG
+			print_all_clauses(sat_state);
+			printf("Clause: %ld is subsumed now\n", clause->cindex);
+#endif
 		}
 	}
 }
 //added API: Undo state of clause of undecided literal which was asserted called at undo unit resolution took place
-void sat_undo_clauses_state(Lit* lit){
+void sat_undo_clauses_state(Lit* lit, SatState* sat_state){
 	if(sat_is_asserted_literal(lit)){
-		Var* corresponding_var = lit->variable;
-		for(unsigned long i =0; i<corresponding_var->num_of_clauses_of_variables; i++){
-			if(corresponding_var->list_clause_of_variables[i]->is_subsumed == 1){
-				corresponding_var->list_clause_of_variables[i]->is_subsumed = 0; //clear the state of the clause
-			}
+		for(unsigned long i =0; i<lit->num_containing_clause; i++){
+			Clause* clause = sat_index2clause(lit->list_of_containing_clauses[i], sat_state);;
+			clause->is_subsumed = 0;
 		}
 	}
 
@@ -501,10 +524,12 @@ void variable_cleanup (Var * variable) {
 	// the literals to which it points:
 	literal_free(variable->posLit);
 	literal_free(variable->negLit);
+	FREE(variable->list_clause_of_variables);
 }
 
 void literal_free (Lit * literal) {
 	FREE(literal->list_of_watched_clauses);
+	FREE(literal->list_of_containing_clauses);
 
 	// no need to free the antecedent clause though,
 	// as it may exist outside this literal
@@ -733,7 +758,7 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 			if(sat_state->decisions[i]->LitState == 1){
 				Var* var = sat_literal_var(sat_state->decisions[i]);
 				var->antecedent = NULL;
-				sat_undo_clauses_state(sat_state->decisions[i]);
+				sat_undo_clauses_state(sat_state->decisions[i], sat_state);
 
 				Lit* poslit = var->posLit;
 			//	poslit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals. This value will be overwritten later

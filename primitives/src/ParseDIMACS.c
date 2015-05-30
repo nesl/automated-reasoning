@@ -23,13 +23,41 @@
 void add_clause_to_variable(Var* var, Clause* clause){
 	if(var->num_of_clauses_of_variables >= var->max_size_list_of_clause_of_variables){
 		var->max_size_list_of_clause_of_variables = var->num_of_clauses_of_variables * MALLOC_GROWTH_RATE;
-		var->list_clause_of_variables = (Clause**) realloc (var->list_clause_of_variables,sizeof(Clause*) * var->max_size_list_of_clause_of_variables);
+		var->list_clause_of_variables = (unsigned long*) realloc (var->list_clause_of_variables,sizeof(unsigned long) * var->max_size_list_of_clause_of_variables);
 	}
 
-	var->list_clause_of_variables[var->num_of_clauses_of_variables++] = clause;
+	var->list_clause_of_variables[var->num_of_clauses_of_variables++] = clause->cindex;
+}
+
+
+// update the list of clause that has this literal as one of its literals
+void add_clause_to_literal(Lit* lit, Clause* clause){
+
+	if(lit->num_containing_clause >= lit->max_size_list_contatining_clauses){
+		lit->max_size_list_contatining_clauses = lit->max_size_list_contatining_clauses * MALLOC_GROWTH_RATE;
+		lit->list_of_containing_clauses = (unsigned long*) realloc (lit->list_of_containing_clauses,sizeof(unsigned long) * lit->max_size_list_contatining_clauses);
+	}
+
+	lit->list_of_containing_clauses[lit->num_containing_clause++] = clause->cindex;
 
 }
 
+// add watching clause to the list of watching clauses over a literal (used again when you learn a new clause)
+void add_watching_clause(Clause* clause, Lit* lit){
+
+	//get clause index.
+	unsigned long index = clause->cindex;
+
+	if(lit->num_watched_clauses >= lit->max_size_list_watched_clauses){
+			// needs to realloc the size
+			lit->max_size_list_watched_clauses =(lit->num_watched_clauses * MALLOC_GROWTH_RATE);
+			lit->list_of_watched_clauses = (unsigned long*) realloc( lit->list_of_watched_clauses, sizeof(unsigned long) * lit->max_size_list_watched_clauses);
+	}
+
+	lit->list_of_watched_clauses[lit->num_watched_clauses] = index;
+
+	lit->num_watched_clauses ++;
+}
 
 
 /******************************************************************************
@@ -84,8 +112,9 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].index = i+1; 								// variables start with index 1 to n ;
 		sat_state->variables[i].max_size_list_of_clause_of_variables = 1;				//
 		sat_state->variables[i].num_of_clauses_of_variables = 0;
-		sat_state->variables[i].list_clause_of_variables = (Clause**) malloc(sizeof(Clause*) * (sat_state->variables[i].max_size_list_of_clause_of_variables) );
+		sat_state->variables[i].list_clause_of_variables = (unsigned long*) malloc(sizeof(unsigned long) );
 		sat_state->variables[i].antecedent = NULL;
+		sat_state->variables[i].sat_state = sat_state;
 
 		/* Initialize negative literals*/
 		sat_state->variables[i].negLit = (Lit*) malloc(sizeof(Lit) );
@@ -96,6 +125,9 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].negLit->num_watched_clauses = 0;
 		sat_state->variables[i].negLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
 		sat_state->variables[i].negLit->max_size_list_watched_clauses = 1;
+		sat_state->variables[i].negLit->num_containing_clause = 0;
+		sat_state->variables[i].negLit->list_of_containing_clauses = (unsigned long*) malloc(sizeof(unsigned long));// will be realloc when it expands
+		sat_state->variables[i].negLit->max_size_list_contatining_clauses = 1;
 		sat_state->variables[i].negLit->variable = &(sat_state->variables[i]);
 		sat_state->variables[i].negLit->vsids_score = 0;
 
@@ -109,6 +141,9 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].posLit->num_watched_clauses = 0;// initialize to free literal
 		sat_state->variables[i].posLit->list_of_watched_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
 		sat_state->variables[i].posLit->max_size_list_watched_clauses = 1;
+		sat_state->variables[i].posLit->num_containing_clause = 0;
+		sat_state->variables[i].posLit->list_of_containing_clauses = (unsigned long*) malloc(sizeof(unsigned long)); // will be realloc when it expands
+		sat_state->variables[i].posLit->max_size_list_contatining_clauses = 1;
 		sat_state->variables[i].posLit->variable = &(sat_state->variables[i]);
 		sat_state->variables[i].posLit->vsids_score = 0;
 	}
@@ -161,7 +196,11 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 				 clause->literals[countvariables] = sat_pos_literal(var);
 
 			 add_clause_to_variable(var, clause);
+			 add_clause_to_literal(clause->literals[countvariables], clause);
 
+#ifdef DEBUG
+			 print_clause_containing_literal(clause->literals[countvariables]);
+#endif
 			 countvariables ++;
 
 		pch = strtok (NULL, " ");
@@ -174,13 +213,15 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 	// For the two literal watch // just initialize here
 	if(clause->num_literals_in_clause > 1){
 		clause->L1 =  clause->literals[0]; // first literal
+		add_watching_clause(clause, clause->L1);
 		clause->L2 =  clause->literals[1]; // second literal
+		add_watching_clause(clause, clause->L2);
 	}
 	else{ //unit clause
 		clause->L1 = clause->literals[0];
+		add_watching_clause(clause, clause->L1);
 		clause->L2 = NULL;
 	}
-
 
 	return countvariables;
 }

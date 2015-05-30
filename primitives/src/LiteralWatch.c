@@ -10,26 +10,26 @@
 #include <assert.h>
 
 // local value for this file
-static BOOLEAN INIT_LITERAL_WATCH = 0;
+//static BOOLEAN INIT_LITERAL_WATCH = 0;
 
 
-void clear_init_literal_watch(){
-	INIT_LITERAL_WATCH = 0;
-}
+//void clear_init_literal_watch(){
+//	INIT_LITERAL_WATCH = 0;
+//}
+//
 
-
-static void intitialize_watching_clauses(SatState* sat_state){
-
-	for(unsigned long i =0; i< sat_state->num_clauses_in_delta; i++){
-		Clause watching_clause = sat_state->delta[i];
-		Lit* watched_literal1 = watching_clause.L1;
-		Lit* watched_literal2 = watching_clause.L2;
-		add_watching_clause(&watching_clause, watched_literal1);
-		add_watching_clause(&watching_clause, watched_literal2);
-	}
-	// Set the initialization flag;
-	INIT_LITERAL_WATCH = 1;
-}
+//static void intitialize_watching_clauses(SatState* sat_state){
+//
+//	for(unsigned long i =0; i< sat_state->num_clauses_in_delta; i++){
+//		Clause watching_clause = sat_state->delta[i];
+//		Lit* watched_literal1 = watching_clause.L1;
+//		Lit* watched_literal2 = watching_clause.L2;
+//		add_watching_clause(&watching_clause, watched_literal1);
+//		add_watching_clause(&watching_clause, watched_literal2);
+//	}
+//	// Set the initialization flag;
+//	INIT_LITERAL_WATCH = 1;
+//}
 
 static Lit* get_resolved_lit(Lit* decided_literal, SatState* sat_state){
 	Var* corresponding_var = decided_literal->variable;
@@ -84,21 +84,21 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 /******************************************************************************
 add watching clause to the list of watching clauses over a literal
 ******************************************************************************/
-void add_watching_clause(Clause* clause, Lit* lit){
-
-	//get clause index.
-	unsigned long index = clause->cindex;
-
-	if(lit->num_watched_clauses >= lit->max_size_list_watched_clauses){
-			// needs to realloc the size
-			lit->max_size_list_watched_clauses =(lit->num_watched_clauses * MALLOC_GROWTH_RATE);
-			lit->list_of_watched_clauses = (unsigned long*) realloc( lit->list_of_watched_clauses, sizeof(unsigned long) * lit->max_size_list_watched_clauses);
-	}
-
-	lit->list_of_watched_clauses[lit->num_watched_clauses] = index;
-
-	lit->num_watched_clauses ++;
-}
+//void add_watching_clause(Clause* clause, Lit* lit){
+//
+//	//get clause index.
+//	unsigned long index = clause->cindex;
+//
+//	if(lit->num_watched_clauses >= lit->max_size_list_watched_clauses){
+//			// needs to realloc the size
+//			lit->max_size_list_watched_clauses =(lit->num_watched_clauses * MALLOC_GROWTH_RATE);
+//			lit->list_of_watched_clauses = (unsigned long*) realloc( lit->list_of_watched_clauses, sizeof(unsigned long) * lit->max_size_list_watched_clauses);
+//	}
+//
+//	lit->list_of_watched_clauses[lit->num_watched_clauses] = index;
+//
+//	lit->num_watched_clauses ++;
+//}
 
 
 /******************************************************************************
@@ -111,9 +111,9 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 	// Once I entered here I must have elements in the decision array
 	assert(sat_state->num_literals_in_decision > 0);
 
-	// initialize the list of watched clauses
-	if(!INIT_LITERAL_WATCH)
-		intitialize_watching_clauses(sat_state);
+	// initialize the list of watched clauses already initialized in ParseDIMACS
+//	if(!INIT_LITERAL_WATCH)
+//		intitialize_watching_clauses(sat_state);
 
 	BOOLEAN contradiction_flag = 0;
 
@@ -133,7 +133,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 	for(unsigned long i =0; i<num_decision_lit; i++){
 #ifdef DEBUG
 		printf("--------------------------------------\n");
-		printf("Decision list now: ");
+		printf("Decision list now in two literal watch: ");
 		for(unsigned long j =0; j< num_decision_lit;j++){
 			printf("%ld\t", literals_in_decision[j]->sindex );
 		}
@@ -147,9 +147,8 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 		printf("Resolved Literal: %ld\n", resolved_literal->sindex);
 #endif
 
-		//TODO: uncomment Update clauses state based on the decided literal
-		//sat_update_clauses_state(decided_literal);
-		//TODO: Enhance: we can only get the watched clauses that are not subsumed to speed it up and to avoid checking the unit clause
+		//TODO: Update clauses state based on the decided literal
+		sat_update_clauses_state(decided_literal , sat_state);
 
 
 
@@ -166,7 +165,9 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 					Clause* wclause = sat_index2clause( resolved_literal->list_of_watched_clauses[k], sat_state);
 
 					//TODO: Check if this actually works to skip the subsumed clauses
-					//if(wclause->is_subsumed) continue;
+					//TODO: Enhance: we can only get the watched clauses that are not subsumed to speed it up and to avoid checking the unit clause
+					if(wclause->is_subsumed)
+						continue;
 
 					Lit* free_lit = NULL;
 					// if unit (only one free)
@@ -197,7 +198,8 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 							print_clause(sat_literal_var(free_lit)->antecedent);
 #endif
 						}
-						// the last free literal is the only free literal in this case
+						// the last free literal is the only free literal in this case and update its decision level
+						free_lit->decision_level = decided_literal->decision_level;
 						add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
 #ifdef DEBUG
 						printf("Add the free literal %ld to the pending list\n",free_lit->sindex);
@@ -284,7 +286,14 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 						pending_lit->LitState = 1;
 					}
 
-					pending_lit->decision_level = sat_state->current_decision_level;
+//					for(unsigned long i = 0; i< sat_literal_var(pending_lit)->num_of_clauses_of_variables; i++){
+//						Clause* clause = sat_literal_var(pending_lit)->list_clause_of_variables[i];
+//
+//					}
+
+					//TODO: the decision level should be the same as the level of the antecedent not the current level
+					//pending_lit->decision_level = sat_state->current_decision_level;
+
 					//update the decision list
 					sat_state->decisions[sat_state->num_literals_in_decision++] = pending_lit;
 

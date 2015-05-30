@@ -57,7 +57,7 @@ typedef double c2dWmc;          //for (weighted) model count
 typedef struct var Var;
 typedef struct literal Lit;
 typedef struct clause Clause;
-
+typedef struct sat_state_t SatState;
 
 
 /******************************************************************************
@@ -75,13 +75,15 @@ struct var {
 	c2dSize index; 							//variable index
 	Lit* posLit; 							// Keep track of the variable positive literal
 	Lit* negLit; 							// keep track of the variable negative literal
-	Clause** list_clause_of_variables;  		//	a list of clauses that have the variable inside it
+	unsigned long* list_clause_of_variables;  		//	a list of clauses that have the variable inside it
 	unsigned long num_of_clauses_of_variables;
 	unsigned long max_size_list_of_clause_of_variables;
 
 	/* for the non-chronological backtracking UIP */
 	// the unit clause used for implying the (variable) is said to be the antecedent of this literal(variable)
 	Clause* antecedent;									// antecedent clause
+
+	SatState* sat_state; // I had to keep a pointer of the sat state here due to the requirements of some APIs
 
 	BOOLEAN mark; 							//THIS FIELD MUST STAY AS IS
 
@@ -108,6 +110,10 @@ struct literal {
 	unsigned long num_watched_clauses;
 	unsigned long max_size_list_watched_clauses;
 
+	/** To facilitate setting the subsumed clause add a list of clauses containing this literal */
+	unsigned long* list_of_containing_clauses;
+	unsigned long num_containing_clause;
+	unsigned long max_size_list_contatining_clauses;
 
 	/** For variable order algorithm VSIDS*/
 	unsigned long vsids_score; 							// for use in variable selection
@@ -261,6 +267,8 @@ void sat_undo_decide_literal(SatState* sat_state);
 #ifdef DEBUG
 void print_clause(Clause* clause);
 void print_all_clauses(SatState* sat_state);
+void print_clause_containing_literal(Lit* lit);
+void print_current_decisions(SatState* sat_state);
 #endif
 
 //returns a clause structure for the corresponding index
@@ -292,10 +300,10 @@ c2dSize sat_learned_clause_count(const SatState* sat_state);
 Clause* sat_assert_clause(Clause* clause, SatState* sat_state);
 
 //Added API: Update the state of the clause if one of its literals is asserted
-void sat_update_clauses_state(Lit* lit);
+void sat_update_clauses_state(Lit* lit, SatState* sat_state);
 
 //Added API: Undo the state of the clause at backtracking when we do undo unit resolution
-void sat_undo_clauses_state(Lit* lit);
+void sat_undo_clauses_state(Lit* lit, SatState* sat_state);
 
 /******************************************************************************
  * SatState
