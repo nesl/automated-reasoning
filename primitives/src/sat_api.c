@@ -285,20 +285,32 @@ BOOLEAN sat_implied_literal(const Lit* lit) {
 Clause* sat_decide_literal(Lit* lit, SatState* sat_state) {
 
 	assert(lit!=NULL);
-	//update the literal parameters
-	//Set lit values
-	if(lit->sindex < 0)
-		lit->LitValue = 0;
-	else if (lit->sindex > 0)
-		lit->LitValue = 1;
-
-	//TODO:  flip the opposite literal -->handled in two literal watch
 
 	lit->LitState = 1;
 
 	// Update the decision level
 	sat_state->current_decision_level ++;
 	lit->decision_level = sat_state->current_decision_level;
+
+
+	//update the literal parameters
+	//Set lit values
+	if(lit->sindex < 0){
+		lit->LitValue = 0;
+		Lit* opposite_lit = sat_literal_var(lit)->posLit;
+		opposite_lit->LitValue = 0;
+		opposite_lit->LitState = 1;
+		opposite_lit->decision_level = lit->decision_level;
+	}
+	else if (lit->sindex > 0){
+		lit->LitValue = 1;
+		Lit* opposite_lit = sat_literal_var(lit)->negLit;
+		opposite_lit->LitValue = 1;
+		opposite_lit->LitState = 1;
+		opposite_lit->decision_level = lit->decision_level;
+	}
+
+
 
 	// here update the decision array of the sat_state
 	sat_state->decisions[sat_state->num_literals_in_decision++] = lit;
@@ -424,27 +436,11 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
 //added API: Update the state of the clause if a literal is decided or implied i.e. asserted
 void sat_update_clauses_state(Lit* lit, SatState* sat_state){
-#ifdef DEBUG
-	printf("405\n");
-#endif
 	if(sat_is_asserted_literal(lit)){
-#ifdef DEBUG
-	printf("409\n");
-#endif
 		for(unsigned long i =0; i<lit->num_containing_clause; i++){
-#ifdef DEBUG
-	printf("413   %ld\n",i);
-#endif
 			Clause* clause = sat_index2clause(lit->list_of_containing_clauses[i], sat_state);
-#ifdef DEBUG
-	printf("417   %ld\n",i);
-#endif
 			clause->is_subsumed = 1;
 #ifdef DEBUG
-	printf("421   %ld\n",i);
-#endif
-#ifdef DEBUG
-			print_all_clauses(sat_state);
 			printf("Clause: %ld is subsumed now\n", clause->cindex);
 #endif
 		}
@@ -812,6 +808,7 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 			//	poslit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals. This value will be overwritten later
 				poslit->LitState = 0;
 				poslit->LitValue = 'u';
+
 				//poslit->num_watched_clauses = 0; // watched clauses should stay the same
 
 

@@ -9,14 +9,25 @@
 #include "LiteralWatch.h"
 #include "ParseDIMACS.h" //for the add_watching_clause api
 #include "global.h"
-
+#include <stdlib.h>
 
 #ifdef DEBUG
+
+static int comp (const void * elem1, const void * elem2)
+{
+    int f = *((unsigned long*)elem1);
+    int s = *((unsigned long*)elem2);
+    if (f > s) return  1;
+    if (f < s) return -1;
+    return 0;
+}
 static BOOLEAN are_equivalent_clauses(Clause* c1, Clause* c2){
 	if(c1->num_literals_in_clause != c2->num_literals_in_clause)
 		return 0;
 
-	//TODO sort the two clauses first before checking
+	//TODO sort the two clauses first before checking (in place)
+	qsort (*c1->literals, c1->num_literals_in_clause,  sizeof(unsigned long), comp);
+	qsort (*c2->literals, c2->num_literals_in_clause,  sizeof(unsigned long), comp);
 
 	for(unsigned long i =0; i < c1->num_literals_in_clause; i++ ){
 		if(c1->literals[i]->sindex != c2->literals[i]->sindex)
@@ -383,11 +394,11 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		printf("\n");
 #endif
 
-		//check fixed point
-//		if(are_equivalent_clauses(wl, wl_1)){
-//			fixed_point_achieved =1;
-//		}
-//		else
+	//	check fixed point
+		if(are_equivalent_clauses(wl, wl_1)){
+			fixed_point_achieved =1;
+		}
+		else
 		if(is_termination_condition_hold(wl, sat_state, USE_UIP_LEARNT_CLAUSE) == 1) // is indeed an asserting clause // only one literal at the current decision level
 			fixed_point_achieved = 1;
 		else{

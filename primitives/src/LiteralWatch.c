@@ -31,6 +31,183 @@
 //	INIT_LITERAL_WATCH = 1;
 //}
 
+
+static BOOLEAN evaluate_delta(SatState* sat_state, Lit** pending_list, unsigned long num_pending_lit){
+	BOOLEAN fails =0;
+#ifdef DEBUG
+	printf("Evaluate delta loop: %ld at pending lit %ld \n",num_pending_lit, pending_list[num_pending_lit-1]->sindex );
+#endif
+	// just for the sake of this function but will be reset if contradiction happens
+	for(unsigned long i =0; i < num_pending_lit; i++){
+		Lit* pending_lit = pending_list[i];
+		if(pending_lit->sindex <0){
+			pending_lit->LitValue = 0;
+			pending_lit->LitState = 1;
+
+			Lit* opposite_Lit = sat_literal_var(pending_lit)->posLit;
+			opposite_Lit->LitValue = 0;
+			opposite_Lit->LitState = 1;
+		}
+		else if(pending_lit->sindex >0){
+			pending_lit->LitValue = 1;
+			pending_lit->LitState = 1;
+
+			Lit* opposite_Lit = sat_literal_var(pending_lit)->negLit;
+			opposite_Lit->LitValue = 1;
+			opposite_Lit->LitState = 1;
+		}
+	}
+
+
+	for(unsigned long i=0; i<sat_state->num_clauses_in_delta; i++){
+		Clause* clause = &sat_state->delta[i];
+		//check clause
+		BOOLEAN contradiction_found = 1;
+		for(unsigned long k = 0; k<clause->num_literals_in_clause;k++){
+			//check if the literal is asserted or not yet set
+			if(sat_is_asserted_literal(clause->literals[k]) || (!sat_implied_literal(clause->literals[k]) )){
+				contradiction_found = 0;
+				break; //don't check the other literals of the clause
+			}
+		} // for all literals in a clause
+
+		if(contradiction_found == 1){
+			fails = 1;
+			sat_state->conflict_clause = clause;
+#ifdef DEBUG
+			printf("In Evaluate Delta: \t");
+			print_clause(clause);
+#endif
+			for(unsigned long j = 0; j < num_pending_lit; j++){
+				Lit* pending_lit = pending_list[j];
+				pending_lit->LitValue = 'u';
+				pending_lit->LitState = 0;
+
+				if(pending_lit->sindex <0){
+					Lit* opposite_Lit = sat_literal_var(pending_lit)->posLit;
+					opposite_Lit->LitValue = 'u';
+					opposite_Lit->LitState = 0;
+				}else{
+					Lit* opposite_Lit = sat_literal_var(pending_lit)->negLit;
+					opposite_Lit->LitValue = 'u';
+					opposite_Lit->LitState = 0;
+				}
+
+			}
+			break;
+		}
+
+	}//end of for loop on clauses in delta
+#ifdef DEBUG
+	printf("Contradiction_found = %d\n",fails);
+#endif
+
+	return fails;
+}
+
+
+
+static BOOLEAN evaluate_current_assignment(SatState* sat_state, Lit** pending_list, unsigned long num_pending_lit){
+#ifdef DEBUG
+	printf("Evaluate the current assignment\n");
+#endif
+	BOOLEAN fails = 0;
+
+	// just for the sake of this function but will be reset if contradiction happens
+	for(unsigned long i =0; i<num_pending_lit; i++){
+		Lit* pending_lit = pending_list[i];
+		if(pending_lit->sindex <0){
+			pending_lit->LitValue = 0;
+			pending_lit->LitState = 1;
+		}
+		else if(pending_lit->sindex >0){
+			pending_lit->LitValue = 1;
+			pending_lit->LitState = 1;
+		}
+	}
+
+	Lit** decisions = sat_state->decisions;
+	//now I have the current decision and the pending list
+	// instead of merging the two list in one list just pass by each one
+	for(unsigned long i =0; i<sat_state->num_literals_in_decision; i++){
+#ifdef DEBUG
+		printf("In the decision literals loop: current literal %ld \n", decisions[i]->sindex);
+#endif
+		Var* corresponding_var = sat_literal_var(decisions[i]);
+		unsigned long* decision_clause_list = corresponding_var->list_clause_of_variables;
+
+
+		for(unsigned long j=0; j<corresponding_var->num_of_clauses_of_variables; j++){
+
+			Clause* clause = sat_index2clause(decision_clause_list[j], sat_state);
+
+			//check clause
+			for(unsigned long k = 0; k<clause->num_literals_in_clause;k++){
+				//check if the literal is asserted or not yet set
+				if(sat_is_asserted_literal(clause->literals[k]) || (!sat_implied_literal(clause->literals[k]) )){
+					break; //don't check the other literals of the clause
+				}
+				else if(k== clause->num_literals_in_clause-1){ // I reached the end of the loop with no break (contradicted clause)
+					fails = 1;
+					sat_state->conflict_clause = clause;
+					// reset the pending list
+					for(unsigned long i =0; i<num_pending_lit; i++){
+						Lit* pending_lit = pending_list[i];
+						pending_lit->LitValue = 'u';
+						pending_lit->LitState = 0;
+					}
+					return fails;
+				}
+			} // for all literals in a clause
+		} // for all clauses for this variable
+	}// for all variables in decision list
+
+
+	//repeat the same for pending list
+	for(unsigned long i =0; i< num_pending_lit; i++){
+#ifdef DEBUG
+		printf("In the pending literals loop: current literal %ld \n", pending_list[i]->sindex);
+#endif
+		Var* corresponding_var = sat_literal_var(pending_list[i]);
+		unsigned long* pending_clause_list = corresponding_var->list_clause_of_variables;
+
+		for(unsigned long j=0; j<corresponding_var->num_of_clauses_of_variables; j++){
+
+			Clause* clause = sat_index2clause(pending_clause_list[j], sat_state);
+
+			//check clause
+			for(unsigned long k = 0; k<clause->num_literals_in_clause;k++){
+				//check if the literal is asserted or not yet set
+				if(sat_is_asserted_literal(clause->literals[k]) || (!sat_implied_literal(clause->literals[k]) )){
+					break; //don't check the other literals of the clause
+				}
+				else if(k== clause->num_literals_in_clause-1){ // I reached the end of the loop with no break (contradicted clause)
+					fails = 1;
+					sat_state->conflict_clause = clause;
+					// reset the pending list
+					for(unsigned long i =0; i<num_pending_lit; i++){
+						Lit* pending_lit = pending_list[i];
+						pending_lit->LitValue = 'u';
+						pending_lit->LitState = 0;
+					}
+					return fails;
+
+				}
+			} // for all literals in a clause
+		} // for all clauses for this variable
+	}// for all variables in pending list
+
+
+//TODO: check do i have to unset all the literals in the pending list
+#ifdef DEBUG
+	if(fails == 1){
+		printf("Contradiction happens in evaluating clauses in the pending list\n");
+	}
+#endif
+
+	return fails;
+}
+
 static Lit* get_resolved_lit(Lit* decided_literal, SatState* sat_state){
 	Var* corresponding_var = decided_literal->variable;
 	Lit* resolved_literal = NULL;
@@ -80,25 +257,6 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 //}
 
 
-
-/******************************************************************************
-add watching clause to the list of watching clauses over a literal
-******************************************************************************/
-//void add_watching_clause(Clause* clause, Lit* lit){
-//
-//	//get clause index.
-//	unsigned long index = clause->cindex;
-//
-//	if(lit->num_watched_clauses >= lit->max_size_list_watched_clauses){
-//			// needs to realloc the size
-//			lit->max_size_list_watched_clauses =(lit->num_watched_clauses * MALLOC_GROWTH_RATE);
-//			lit->list_of_watched_clauses = (unsigned long*) realloc( lit->list_of_watched_clauses, sizeof(unsigned long) * lit->max_size_list_watched_clauses);
-//	}
-//
-//	lit->list_of_watched_clauses[lit->num_watched_clauses] = index;
-//
-//	lit->num_watched_clauses ++;
-//}
 
 
 /******************************************************************************
@@ -150,8 +308,6 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 		//TODO: Update clauses state based on the decided literal
 		sat_update_clauses_state(decided_literal , sat_state);
 
-
-
 		//If no watching clauses on the resolved literal then do nothing and record the decision
 		if(resolved_literal->num_watched_clauses == 0){
 			// The decided literal is already in the decision list so no need to record it again
@@ -160,19 +316,11 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 		}
 		else{
 			//Get the watched clauses for the resolved literal
-			for(unsigned long k = 0; k < resolved_literal->num_watched_clauses; k++){
-#ifdef DEBUG
-		printf("165   %ld\n",k);
-		print_all_clauses(sat_state);
-#endif
+			for(unsigned long k = 0; k < resolved_literal->num_watched_clauses && contradiction_flag == 0; k++){
 					//check dirty flag
 					if(resolved_literal->list_of_dirty_watched_clauses[k] == 0) continue;
 
 					Clause* wclause = sat_index2clause( resolved_literal->list_of_watched_clauses[k], sat_state);
-#ifdef DEBUG
-		printf("170  -- %ld----%ld\n", wclause->cindex, resolved_literal->list_of_watched_clauses[k]);
-		print_all_clauses(sat_state);
-#endif
 
 					//TODO: Check if this actually works to skip the subsumed clauses
 					//TODO: Enhance: we can only get the watched clauses that are not subsumed to speed it up and to avoid checking the unit clause
@@ -188,9 +336,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 							free_lit = wclause->literals[l];
 						}
 					}
-#ifdef DEBUG
-		printf("188\n");
-#endif
+
 					if(num_free_literals == 1){
 						//I have a unit clause take an implication and update the antecedent
 						//TODO The antecedent is a unit clause!
@@ -219,10 +365,6 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 						continue; // go to the next clause
 
 					}
-
-#ifdef DEBUG
-		printf("219\n");
-#endif
 
 					if (num_free_literals == 0){
 						//contradiction --> everything is resolved
@@ -268,10 +410,6 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 						}
 
 					}
-#ifdef DEBUG
-		printf("267\n");
-#endif
-
 					// find another literal to watch that is free
 					for(unsigned long z = 0; z < wclause->num_literals_in_clause; z++){
 						if((!sat_implied_literal(wclause->literals[z])) && wclause->literals[z] != wclause->L1 && wclause->literals[z] != wclause->L2){
@@ -296,26 +434,41 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 			if(num_pending_lit >0){
 			// Pass over the pending list and add the literals to the decision while maintaining the level
 				for(unsigned long i =0; i < num_pending_lit; i++){
+					//evaluate the pending list to make sure we didn't miss a chance of contraction // if the contradiction flag is raised then the conflict clause is already set in this function
+					BOOLEAN fails = evaluate_delta(sat_state, pending_list, i+1); //up till this pending literal
+
+
 					// pending literal was an already watched clause so the associated list of watching clauses is already handled
 					// fix values of pending literal before putting in decision
 					Lit* pending_lit = pending_list[i];
 
 //					Var* corresponding_var = sat_literal_var(pending_lit);
 //					if(sat_instantiated_var(corresponding_var) == 1 && contradiction_flag == 0){
-//						contradiction_flag = 1;
-//						sat_state->conflict_clause = corresponding_var->antecedent;
-////#ifdef DEBUG
-////						printf("Is instantiated var:\n");
-////#endif
+//						//contradiction_flag = 1;
+//						//sat_state->conflict_clause = corresponding_var->antecedent;
+//#ifdef DEBUG
+//						printf("Is already instantiated var in pending list: %ld \n", pending_lit->sindex);
+//#endif
 //					}
+
+					//TODO: the decision level should be the same as the max level of the antecedent not the current level.
+					pending_lit->decision_level = sat_state->current_decision_level;
 
 					if(pending_lit->sindex <0){
 						pending_lit->LitValue = 0;
 						pending_lit->LitState = 1;
+						Lit* opposite_lit = sat_literal_var(pending_lit)->posLit;
+						opposite_lit->LitValue = 0;
+						opposite_lit->LitState = 1;
+						opposite_lit->decision_level = pending_lit->decision_level;
 					}
 					else if(pending_lit->sindex >0){
 						pending_lit->LitValue = 1;
 						pending_lit->LitState = 1;
+						Lit* opposite_lit = sat_literal_var(pending_lit)->negLit;
+						opposite_lit->LitValue = 1;
+						opposite_lit->LitState = 1;
+						opposite_lit->decision_level = pending_lit->decision_level;
 					}
 
 //					for(unsigned long i = 0; i< sat_literal_var(pending_lit)->num_of_clauses_of_variables; i++){
@@ -323,8 +476,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 //
 //					}
 
-					//TODO: the decision level should be the same as the max level of the antecedent not the current level.
-					pending_lit->decision_level = sat_state->current_decision_level;
+
 
 					//update the decision list
 					sat_state->decisions[sat_state->num_literals_in_decision++] = pending_lit;
@@ -332,14 +484,19 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 					//update list of literals in last decision because this is the main loop
 					literals_in_decision[num_decision_lit++] = pending_lit;
 
-
+					if (fails == 1){
+						contradiction_flag = 1;
+						break;
+					}
 				}
-
 //				//free pending list for the next round
 //				if(pending_list != NULL && num_pending_lit != 0)
 //					FREE(pending_list);
-			}
-		}
+
+			} // pending_list > 1
+
+
+		}//Get the watched clauses for the resolved literal
 
 		//free pending list for the next round
 		//--> pending list is related to each decided literal. so before taking a new decision clear the pending list
