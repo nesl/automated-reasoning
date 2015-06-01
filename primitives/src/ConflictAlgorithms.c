@@ -13,21 +13,21 @@
 
 #ifdef DEBUG
 
-static int comp (const void * elem1, const void * elem2)
-{
-    int f = *((unsigned long*)elem1);
-    int s = *((unsigned long*)elem2);
-    if (f > s) return  1;
-    if (f < s) return -1;
-    return 0;
-}
+//static int comp (const void * elem1, const void * elem2)
+//{
+//    int f = *((unsigned long*)elem1);
+//    int s = *((unsigned long*)elem2);
+//    if (f > s) return  1;
+//    if (f < s) return -1;
+//    return 0;
+//}
 static BOOLEAN are_equivalent_clauses(Clause* c1, Clause* c2){
 	if(c1->num_literals_in_clause != c2->num_literals_in_clause)
 		return 0;
 
 	//TODO sort the two clauses first before checking (in place)
-	qsort (*c1->literals, c1->num_literals_in_clause,  sizeof(unsigned long), comp);
-	qsort (*c2->literals, c2->num_literals_in_clause,  sizeof(unsigned long), comp);
+	//qsort (*c1->literals, c1->num_literals_in_clause,  sizeof(unsigned long), comp);
+	//qsort (*c2->literals, c2->num_literals_in_clause,  sizeof(unsigned long), comp);
 
 	for(unsigned long i =0; i < c1->num_literals_in_clause; i++ ){
 		if(c1->literals[i]->sindex != c2->literals[i]->sindex)
@@ -257,10 +257,23 @@ static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
 static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
 	BOOLEAN predicate_value =0;
 	// not a decision TODO: what if the UIP was the decision!?
-	if((lit->decision_level == sat_state->current_decision_level) && (sat_literal_var(lit)->antecedent != NULL))
+	//SALMA: I changed this
+#ifdef DEBUG
+	printf("Is predicate hold for literal: %ld, at decision: %ld  \t",lit->sindex, lit->decision_level );
+
+#endif
+	if((lit->decision_level == sat_state->current_decision_level) && (sat_literal_var(lit)->antecedent != NULL)){
+	//if((lit->decision_level == sat_state->current_decision_level) && lit->antecedent != NULL)
 		predicate_value = 1;
+#ifdef DEBUG
+	printf("with antecedent = %ld  \t", sat_literal_var(lit)->antecedent->cindex);
 
+#endif
+	}
 
+#ifdef DEBUG
+	printf("%ld\n",predicate_value);
+#endif
 	return predicate_value;
 }
 
@@ -317,7 +330,7 @@ static BOOLEAN is_termination_condition_hold(Clause* wl, SatState* sat_state, BO
 static void learn_trivial_clause(Clause* wl, SatState* sat_state){
 
 	//TODO: check the stopping condition. I stopped at the before last in decision because u usually have double opposite assignment
-	for(unsigned long i =0; i < sat_state->num_literals_in_decision-1; i++){
+	for(unsigned long i =0; i < sat_state->num_literals_in_decision; i++){
 		Lit* lit = sat_state->decisions[i];
 		Lit* addedlit = NULL;
 		if(lit->sindex > 0)
@@ -350,9 +363,14 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 	Clause* wl_1 = (Clause*) malloc(sizeof(Clause));
 	wl_1->literals = (Lit**) malloc(sizeof(Lit*) * (sat_state->conflict_clause->num_literals_in_clause)); // because at the beginning wl-1 is copied with conflict clause
 
+#ifdef DEBUG
+	printf("Initialize wl_1 with %ld\n",sat_state->conflict_clause->cindex );
+#endif
 	//initially wl_1 = conflict clause //deep copy
 	initialize_learning_clause(wl_1, sat_state->conflict_clause);
-
+#ifdef DEBUG
+	printf("finish initializing wl_1 with %ld\n",sat_state->conflict_clause->cindex );
+#endif
 	//fixed point
 	BOOLEAN fixed_point_achieved = 0;
 
@@ -360,10 +378,18 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		Clause* alpha_l = NULL;
 		for(unsigned long i=0; i< wl_1->num_literals_in_clause; i++){
 			Lit* lit = wl_1->literals[i];
+#ifdef DEBUG
+	printf("examine first literal in wl_1 %ld\n",lit->sindex );
+#endif
 			if(is_predicate_hold(lit, sat_state)){
 				alpha_l = sat_literal_var(lit)->antecedent; // alpha_l will evaluate to a unit clause in the current setting
+				//SALMA: I changed this
+				//alpha_l = lit->antecedent;
 				//break; // break for
 				//maybe continue
+
+				//SALMA: here maybe check whether this lit is falsified last in this clause or not. if yes then break else continue
+
 				continue;
 			}
 		}

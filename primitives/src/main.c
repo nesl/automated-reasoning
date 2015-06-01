@@ -27,6 +27,10 @@ Lit* get_free_literal(SatState* sat_state) {
   }
 #ifdef DEBUG
   printf("All literals are implied -- no more free literal\n");
+  for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
+	  printf("%ld\n",sat_state->decisions[i]->sindex);
+  }
+
 #endif
   return NULL; //all literals are implied
 }
@@ -34,6 +38,10 @@ Lit* get_free_literal(SatState* sat_state) {
 //if sat state is shown to be satisfiable, it returns NULL
 //otherwise, a clause must be learned and it is returned
 Clause* sat_aux(SatState* sat_state) {
+#ifdef DEBUG
+	printf("Just as a stopping condition: stop at number clauses > 8\n");
+	assert(sat_state->num_clauses_in_delta <= 100);
+#endif
   Lit* lit = get_free_literal(sat_state);
   if(lit==NULL) return NULL; //all literals are implied
 
@@ -59,6 +67,7 @@ BOOLEAN sat(SatState* sat_state) {
   BOOLEAN ret = 0;
   if(sat_unit_resolution(sat_state)) ret = (sat_aux(sat_state)==NULL? 1: 0);
 #ifdef DEBUG
+  	  printf("Back to main sat function with decisions: \n");
 	  for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
 		  printf("%ld\n",sat_state->decisions[i]->sindex);
 	  }

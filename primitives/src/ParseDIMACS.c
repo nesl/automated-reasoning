@@ -151,6 +151,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].negLit->max_size_list_contatining_clauses = 1;
 		sat_state->variables[i].negLit->variable = &(sat_state->variables[i]);
 		sat_state->variables[i].negLit->vsids_score = 0;
+		//sat_state->variables[i].negLit->antecedent = NULL;
 
 
 		/* Initialize positive literals */
@@ -170,6 +171,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].posLit->max_size_list_contatining_clauses = 1;
 		sat_state->variables[i].posLit->variable = &(sat_state->variables[i]);
 		sat_state->variables[i].posLit->vsids_score = 0;
+		//sat_state->variables[i].posLit->antecedent = NULL;
 	}
 
 	return 1;

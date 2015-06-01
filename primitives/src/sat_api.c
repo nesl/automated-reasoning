@@ -112,6 +112,9 @@ c2dSize sat_var_index(const Var* var) {
 
 //returns the variable of a literal
 Var* sat_literal_var(const Lit* lit) {
+//ifdef DEBUG
+//	printf("sat_literal_var: get variable for lit %ld which is var: %ld\n",lit->sindex,lit->variable->index);
+//#endif
 	return lit->variable;
 }
 
@@ -186,7 +189,7 @@ BOOLEAN sat_is_asserted_literal(Lit* lit){
 			return 0;
 			break;
 		default:
-			assert(lit->LitState == 0);
+		//	assert(lit->LitState == 0);
 			return 0;
 			break;
 		}
@@ -202,13 +205,13 @@ BOOLEAN sat_is_asserted_literal(Lit* lit){
 			return 0;
 			break;
 		default:
-			assert(lit->LitState == 0);
+			//assert(lit->LitState == 0);
 			return 0;
 			break;
 		}
 	}
 
-	return 0; // this should never happen
+	return 0;
 
 }
 
@@ -224,7 +227,7 @@ BOOLEAN sat_is_resolved_literal(Lit* lit){
 			return 0;
 			break;
 		default:
-			assert(lit->LitState == 0);
+			//assert(lit->LitState == 0);
 			return 0;
 			break;
 		}
@@ -240,13 +243,13 @@ BOOLEAN sat_is_resolved_literal(Lit* lit){
 			return 0;
 			break;
 		default:
-			assert(lit->LitState == 0);
+			//assert(lit->LitState == 0);
 			return 0;
 			break;
 		}
 	}
 
-	return 0; // this should never happen
+	return 0;
 }
 
 //returns a literal structure for the corresponding index
@@ -319,6 +322,10 @@ Clause* sat_decide_literal(Lit* lit, SatState* sat_state) {
 
 	BOOLEAN success = sat_unit_resolution(sat_state);
 
+#ifdef DEBUG
+	printf("Is unit resolution succeeded: %ld\n",success);
+#endif
+
 	if(!success){
 		Clause* learnt  = CDCL_non_chronological_backtracking_first_UIP(sat_state);
 		return learnt;
@@ -382,8 +389,6 @@ c2dSize sat_learned_clause_count(const SatState* sat_state) {
 //moreover, it should be called only if sat_at_assertion_level() succeeds
 Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
-	FLAG_CASE2_UNIT_RESOLUTION = 1;
-
 	update_vsids_scores(sat_state); // it uses alpha
 
 	//learn clause
@@ -422,6 +427,13 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 	printf("----- sat _assert_clause ---- before running unit resolution\n");
 	print_all_clauses(sat_state);
 #endif
+
+
+	if(sat_state->num_literals_in_decision == 0){ //backtracking went to nothing
+		return NULL;  //i.e. no new clause is learnt and decide a new literal
+	}
+	else
+		FLAG_CASE2_UNIT_RESOLUTION = 1;
 
 	BOOLEAN success = sat_unit_resolution(sat_state); //should use case 2 --> runs only on the decisions in the past
 
@@ -525,6 +537,7 @@ SatState* sat_state_new(const char* file_name) {
 //frees the SatState
 void sat_state_free(SatState* sat_state) {
 
+	printf("Start freeing sat ----");
 	// all three of these are guaranteed to be allocated
 	// based on the implementation of sat_state_new()
 	FREE(sat_state->delta);
@@ -665,6 +678,7 @@ static BOOLEAN unit_resolution_case_1(SatState* sat_state){
 	printf("----- sat _decide_literal ---- after running unit resolution\n");
 	print_all_clauses(sat_state);
 	print_current_decisions(sat_state);
+	printf("-------------------------------------------------------------");
 #endif
 
 	return ret;
@@ -704,6 +718,7 @@ static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 	printf("----- sat _assert_clause ---- after running unit resolution\n");
 	print_all_clauses(sat_state);
 	print_current_decisions(sat_state);
+	printf("-------------------------------------------------------------");
 #endif
 
 	return  ret;
@@ -723,7 +738,9 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 		Clause* cur_clause = &(sat_state->delta[i]);
 		if (cur_clause->num_literals_in_clause == 1){
 			// a unit clause
+			//TODO: correct this case
 			Lit* unit_lit = cur_clause->literals[0];
+			if(sat_is_resolved_literal(unit_lit)) return 0; //contradiction
 			//update the literal parameters (decide it)
 			//Set lit values
 			if(unit_lit->sindex < 0)
@@ -786,7 +803,15 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 	printf("Number of literals in decisions = %ld\n", sat_state->num_literals_in_decision);
 	print_all_clauses(sat_state);
 #endif
-	//TODO: Check the sanity of this in the benchmarks: use sat_state->num_literals_in_decision-1 because it is the conflict literal so u don't need it any way here
+
+// since the order of the decision level in the decision list is not necessarily in ascending order
+// so to avoid the headache of removing from inside a list I create a pending list and then update the decision list in the end
+	// Create pending literal list
+	Lit** decision_pending_list = (Lit**)malloc(sizeof(Lit*));
+	unsigned long max_size_decision_pending_list = 1;
+	unsigned long num_decision_pending_lit = 0;
+
+
 	for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
 #ifdef DEBUG
 		printf("Checking decision: %ld at level %ld\n",sat_state->decisions[i]->sindex, sat_state->decisions[i]->decision_level );
@@ -808,7 +833,6 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 			//	poslit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals. This value will be overwritten later
 				poslit->LitState = 0;
 				poslit->LitValue = 'u';
-
 				//poslit->num_watched_clauses = 0; // watched clauses should stay the same
 
 
@@ -820,20 +844,24 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 			}
 			num_reduced_decisions ++;
 		}
-		//TODO (Performance enhancing):
-		// we are incrementing the decision level one by one so once the decision level
-		// of the literal is less than the current one then you can break. You don't have to
-		// continue the loop
-//		if(sat_state->decisions[i]->decision_level < sat_state->current_decision_level){
-//			break;
-//		}
+		else{
+			add_literal_to_list(decision_pending_list,  sat_state->decisions[i] , &max_size_decision_pending_list, &num_decision_pending_lit);
+			printf("add literal %ld to decision pending\n", sat_state->decisions[i]->sindex);
+		}
 
 	}
+	for(unsigned long j =0; j < num_decision_pending_lit; j++){
+		Lit* pending_lit = decision_pending_list[j];
+		sat_state->decisions[j] = pending_lit;
+	}
+
 	//update the current decision level
 	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions; // you reduce another one which is the implied driven literal at the end
 
-	//reset the initialization of the literal watch
-	//clear_init_literal_watch();
+	//TODO: free pending list here
+	if(decision_pending_list != NULL)
+		FREE(decision_pending_list);
+
 
 	//TODO: don't decrease this for now due to how the main function is constructed! the decision level is reduced after adding the asserting clause
 	//sat_state->current_decision_level -- ;

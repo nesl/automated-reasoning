@@ -120,6 +120,9 @@ struct literal {
 	unsigned long num_containing_clause;
 	unsigned long max_size_list_contatining_clauses;
 
+	/** For the learning algorithm*/
+	//Clause* antecedent;
+
 	/** For variable order algorithm VSIDS*/
 	unsigned long vsids_score; 							// for use in variable selection
 
