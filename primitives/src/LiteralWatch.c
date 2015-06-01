@@ -337,8 +337,6 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 					if(wclause->is_subsumed)
 						continue;
 
-					Lit* free_lit = NULL;
-
 					unsigned long num_free_literals = 0;
 
 					// I have to check the other watched literal
@@ -353,52 +351,8 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 						//check for not resolved literal = free or asserted
 						if( !sat_is_resolved_literal(wclause->literals[l])  && wclause->literals[l]->sindex != the_other_watched_literal->sindex  ) {
 							num_free_literals++;
-							free_lit = wclause->literals[l];
 						}
 					}
-
-
-//					if(num_free_literals == 1){ // it has to be the other watched literal
-//						//I have a unit clause take an implication and update the antecedent
-//						//TODO The antecedent is a unit clause!
-//
-//						// maybe here put a check!!
-//						//if the antecedent is already assigned then
-//						//don't add it again and most probably you will have a conflict in the next round
-//						if(sat_literal_var(free_lit)->antecedent == NULL){
-//							sat_literal_var(free_lit)->antecedent = wclause;  // remember the decision list is updated with the pending list so that's ok
-//
-//#ifdef DEBUG
-//							printf("free literal %ld\n",free_lit->sindex);
-//							//print_clause(wclause);
-//							printf("Antecedent: \n");
-//							print_clause(sat_literal_var(free_lit)->antecedent);
-//#endif
-//							add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
-//#ifdef DEBUG
-//							printf("Add the free literal %ld to the pending list with antecedent %ld\n",free_lit->sindex, (sat_literal_var(free_lit)->antecedent)->cindex );
-//#endif
-//							continue; // go to the next clause
-//						}
-//						//SALMA: here just put the antecdent of the actual literal
-//						else { //this means I implied the opposite (contradiction)
-//							//free_lit->antecedent = wclause;
-//							contradiction_flag= 1;
-//							printf("free literal %ld\n",free_lit->sindex);
-//							printf("-------------Contradiction(opposite implication) happens with clause: %ld\n",wclause->cindex);
-//							sat_state->conflict_clause = wclause;
-//							break; //break from loop of watched clauses over this decided literal
-//						}
-//
-//
-////This part initially was outside the if
-////						add_literal_to_list(pending_list,  free_lit , &max_size_pending_list, &num_pending_lit);
-////#ifdef DEBUG
-////						printf("Add the free literal %ld to the pending list with antecedent %ld\n",free_lit->sindex, sat_literal_var(free_lit)->antecedent->cindex  );
-////#endif
-////						continue; // go to the next clause
-//
-//					}
 
 					if (num_free_literals == 0){ //3cases
 
@@ -438,14 +392,22 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 #endif
 								continue; // go to the next clause
 							}
-							//SALMA: here just put the antecdent of the actual literal
-							else { //this means I implied the opposite (contradiction)
-								//free_lit->antecedent = wclause;
-								contradiction_flag= 1;
-								printf("free literal %ld\n",the_other_watched_literal->sindex);
-								printf("-------------Contradiction(opposite implication) happens with clause: %ld\n",wclause->cindex);
-								sat_state->conflict_clause = wclause;
-								break; //break from loop of watched clauses over this decided literal
+							else { //this means I implied the opposite (contradiction) or the same literal again(redundancy) in another clause
+								//TODO: first check if pending list contains the same literal, if yes then just continue to the next clause else contradiction
+								BOOLEAN lit_is_already_in_pending = 0;
+								for(unsigned long pendelem =0; pendelem<num_pending_lit; pendelem ++){
+									if (pending_list[pendelem]->sindex == the_other_watched_literal->sindex)
+										lit_is_already_in_pending =1;
+								}
+								if(lit_is_already_in_pending == 1)
+									continue; //go to the next clause
+								else{
+									contradiction_flag= 1;
+									printf("free literal %ld\n",the_other_watched_literal->sindex);
+									printf("-------------Contradiction(opposite implication) happens with clause: %ld\n",wclause->cindex);
+									sat_state->conflict_clause = wclause;
+									break; //break from loop of watched clauses over this decided literal
+								}
 							}
 						} //end of the implication case
 					} // end of the three cases
