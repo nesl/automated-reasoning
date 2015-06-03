@@ -122,6 +122,7 @@ struct literal {
 
 	/** For the learning algorithm*/
 	//Clause* antecedent;
+	//unsigned long order_of_implication;  // the order when this literal is falsified
 
 	/** For variable order algorithm VSIDS*/
 	unsigned long vsids_score; 							// for use in variable selection

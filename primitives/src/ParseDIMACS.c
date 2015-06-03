@@ -152,7 +152,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].negLit->variable = &(sat_state->variables[i]);
 		sat_state->variables[i].negLit->vsids_score = 0;
 		//sat_state->variables[i].negLit->antecedent = NULL;
-
+		//sat_state->variables[i].negLit->order_of_implication = 0;
 
 		/* Initialize positive literals */
 		sat_state->variables[i].posLit = (Lit*) malloc(sizeof(Lit) );
@@ -172,6 +172,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].posLit->variable = &(sat_state->variables[i]);
 		sat_state->variables[i].posLit->vsids_score = 0;
 		//sat_state->variables[i].posLit->antecedent = NULL;
+		//sat_state->variables[i].posLit->order_of_implication = 0;
 	}
 
 	return 1;

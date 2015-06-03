@@ -39,6 +39,25 @@ static BOOLEAN are_equivalent_clauses(Clause* c1, Clause* c2){
 #endif
 
 
+static Lit* last_falsified_literal(Clause* clause, SatState* sat_state){
+	Lit* last_lit = NULL;
+	unsigned long index_last_literal = 0;
+	for(unsigned long i =0; i< clause->num_literals_in_clause; i++){
+		Lit* cur_falsified_literal = clause->literals[i];
+		for(unsigned long j=0; j< sat_state->num_literals_in_decision; j++){
+			if(sat_literal_var(cur_falsified_literal)->index == sat_literal_var(sat_state->decisions[j])->index){
+				if(j >= index_last_literal)
+					index_last_literal = j;
+				else
+					continue;
+			}
+		}
+	}
+	last_lit = sat_state->decisions[index_last_literal];
+
+	return last_lit;
+}
+
 //update the clause list of the variable
 static void update_variable_and_literal_list(Clause* clause){
 	for(unsigned long i = 0; i< clause->num_literals_in_clause; i++){
@@ -381,6 +400,8 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 #ifdef DEBUG
 	printf("examine first literal in wl_1 %ld\n",lit->sindex );
 #endif
+	//TODO: Put here a code to call function last_falsified_literal however, the last falsified literal is not necessarily be at the last decision level!!! because of undo decide literal
+	// TODO: how to solve it!!!
 			if(is_predicate_hold(lit, sat_state)){
 				alpha_l = sat_literal_var(lit)->antecedent; // alpha_l will evaluate to a unit clause in the current setting
 				//SALMA: I changed this
