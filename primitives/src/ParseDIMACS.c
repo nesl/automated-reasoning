@@ -273,7 +273,7 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 	while((read = getline(&line, &len, cnf_file)) != -1){
 
 		// ignore anything starts with a c or % (comment line)
-		if (line[0] == 'c' || line[0] == '%') continue;
+		if (line[0] == 'c' || line[0] == '%' || line[0] == ' ') continue;
 
 		// end of file
 		if (line[0] == '0') return;

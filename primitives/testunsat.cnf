@@ -1,4 +1,4 @@
 c test for unsat. 
-p cnf 3 3
+p cnf 1 2
 -1  
 1

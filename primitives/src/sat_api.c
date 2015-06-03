@@ -742,16 +742,32 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 			// a unit clause
 			//TODO: correct this case
 			Lit* unit_lit = cur_clause->literals[0];
-			if(sat_is_resolved_literal(unit_lit)) return 0; //contradiction
+
+			if(sat_is_resolved_literal(unit_lit)){
+				return 0; //contradiction
+			}
 			//update the literal parameters (decide it)
 			//Set lit values
-			if(unit_lit->sindex < 0)
+			if(unit_lit->sindex < 0){
 				unit_lit->LitValue = 0;
-			else if (unit_lit->sindex > 0)
+				unit_lit->decision_level = 1; // because it is unit (not a decision)
+				unit_lit->LitState = 1;
+				Lit* opposite_lit = sat_literal_var(unit_lit)->posLit;
+				opposite_lit->LitValue = 0;
+				opposite_lit->LitState = 1;
+				opposite_lit->decision_level = 1;
+			}
+			else if (unit_lit->sindex > 0){
 				unit_lit->LitValue = 1;
+				unit_lit->decision_level = 1; // because it is unit (not a decision)
+				unit_lit->LitState = 1;
+				Lit* opposite_lit = sat_literal_var(unit_lit)->negLit;
+				opposite_lit->LitValue = 1;
+				opposite_lit->LitState = 1;
+				opposite_lit->decision_level = unit_lit->decision_level;
+			}
 
-			unit_lit->decision_level = 1; // because it is unit (not a decision)
-			unit_lit->LitState = 1;
+
 
 			//add it in the decision list without incrementing the decision level
 			sat_state->decisions[sat_state->num_literals_in_decision++] = unit_lit;
@@ -817,7 +833,7 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 
 		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level ){
 #ifdef DEBUG
-			printf("clean literal: %ld\n and any literal afterwards",sat_state->decisions[i]->sindex);
+			printf("clean literal: %ld\n and any literal afterwards\n",sat_state->decisions[i]->sindex);
 #endif
 			// to avoid cleaning the literal twice
 			//(because u may have the literal and its opposite in the decision at the contradiction)
