@@ -21,8 +21,8 @@ Lit* get_free_literal(SatState* sat_state) {
     if(!sat_implied_literal(plit) && !sat_implied_literal(nlit)){
 #ifdef DEBUG
     	printf("MAIN: Decided Lit: %ld\n", plit->sindex);
-    	return plit;
 #endif
+    	return plit;
     }
   }
 #ifdef DEBUG

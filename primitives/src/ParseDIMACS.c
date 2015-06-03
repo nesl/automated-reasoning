@@ -90,8 +90,9 @@ void remove_watching_clause(unsigned long index, Lit* lit){
 static int parseProblemLine(char* line, SatState* sat_state){
 	char* pch = NULL;
 	int countparameters = 0;
-
+#ifdef DEBUG
 	printf("%s\n",line);
+#endif
 
 	//separate the string into space separated tokens
 	pch = strtok(line, " ");
@@ -99,7 +100,9 @@ static int parseProblemLine(char* line, SatState* sat_state){
 	while (pch != NULL){
 		// skip the p cnf part of the line
 		if ( !strstr(pch, "p")  &&  !strstr(pch, "cnf") ) {
+#ifdef DEBUG
 			printf("%s\n", pch);
+#endif
 			if(countparameters == 0 ){
 				sat_state->num_variables_in_cnf = atoi(pch);
 				//allocate memory for n of variables and at the end the number of implications will equal to the number of variables;
@@ -127,7 +130,9 @@ static int parseProblemLine(char* line, SatState* sat_state){
 
 	// initialize the n variables and 2n literals;
 	for(unsigned long i = 0; i < sat_state->num_variables_in_cnf; i++ ){
+#ifdef DEBUG
 		printf("in loop i = %ld\n", i);
+#endif
 
 		/* Initialize the variables*/
 		sat_state->variables[i].index = i+1; 								// variables start with index 1 to n ;

@@ -403,8 +403,10 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 									continue; //go to the next clause
 								else{
 									contradiction_flag= 1;
+#ifdef DEBUG
 									printf("free literal %ld\n",the_other_watched_literal->sindex);
 									printf("-------------Contradiction(opposite implication) happens with clause: %ld\n",wclause->cindex);
+#endif
 									sat_state->conflict_clause = wclause;
 									break; //break from loop of watched clauses over this decided literal
 								}

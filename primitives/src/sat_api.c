@@ -532,15 +532,14 @@ SatState* sat_state_new(const char* file_name) {
 
   initialize_vsids_scores(sat_state);
 
-  print_all_clauses(sat_state);
-
   return sat_state;
 }
 
 //frees the SatState
 void sat_state_free(SatState* sat_state) {
-
-	printf("Start freeing sat ----");
+#ifdef DEBUG
+	printf("Start freeing sat ----\n");
+#endif
 	// all three of these are guaranteed to be allocated
 	// based on the implementation of sat_state_new()
 	FREE(sat_state->delta);

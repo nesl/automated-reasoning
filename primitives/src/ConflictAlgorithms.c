@@ -11,7 +11,7 @@
 #include "global.h"
 #include <stdlib.h>
 
-#ifdef DEBUG
+
 
 //static int comp (const void * elem1, const void * elem2)
 //{
@@ -36,7 +36,7 @@ static BOOLEAN are_equivalent_clauses(Clause* c1, Clause* c2){
 
 	return 1;
 }
-#endif
+
 
 
 
@@ -46,7 +46,6 @@ static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
 	//SALMA: I changed this
 #ifdef DEBUG
 	printf("Is predicate hold for literal: %ld, at decision: %ld  \t",lit->sindex, lit->decision_level );
-
 #endif
 	if((lit->decision_level == sat_state->current_decision_level) && (sat_literal_var(lit)->antecedent != NULL)){
 	//if((lit->decision_level == sat_state->current_decision_level) && lit->antecedent != NULL)
@@ -468,7 +467,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 			wl = tmp;
 			wl->max_size_list_literals = 1;
 			wl->num_literals_in_clause = 0;
-			print_clause(wl);
+
 		}
 	} //end of while
 
