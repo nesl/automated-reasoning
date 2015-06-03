@@ -11,6 +11,8 @@
 
 void initialize_vsids_scores (SatState * sat_state)
 {
+//	printf("14\n");
+//	print_all_clauses(sat_state);
 	for (unsigned long cidx = 0; cidx < sat_state->num_clauses_in_delta; cidx++)
 	{
 		Clause * cur_clause = & (sat_state->delta[cidx]);
@@ -20,6 +22,8 @@ void initialize_vsids_scores (SatState * sat_state)
 			cur_lit->vsids_score++;
 		}
 	}
+//	print_all_clauses(sat_state);
+//	printf("26\n");
 }
 
 void update_vsids_scores (SatState * sat_state)

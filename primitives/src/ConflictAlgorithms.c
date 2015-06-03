@@ -39,20 +39,50 @@ static BOOLEAN are_equivalent_clauses(Clause* c1, Clause* c2){
 #endif
 
 
-static Lit* last_falsified_literal(Clause* clause, SatState* sat_state){
+
+static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
+	BOOLEAN predicate_value =0;
+	// not a decision TODO: what if the UIP was the decision!?
+	//SALMA: I changed this
+#ifdef DEBUG
+	printf("Is predicate hold for literal: %ld, at decision: %ld  \t",lit->sindex, lit->decision_level );
+
+#endif
+	if((lit->decision_level == sat_state->current_decision_level) && (sat_literal_var(lit)->antecedent != NULL)){
+	//if((lit->decision_level == sat_state->current_decision_level) && lit->antecedent != NULL)
+		predicate_value = 1;
+#ifdef DEBUG
+	printf("with antecedent = %ld  \t", sat_literal_var(lit)->antecedent->cindex);
+#endif
+	}
+
+#ifdef DEBUG
+	printf("%ld\n",predicate_value);
+#endif
+	return predicate_value;
+}
+
+
+
+// get the last falsified literal in the current decision level and not NULL antecedent
+static Lit* last_falsified_literal_with_predicate(Clause* clause, SatState* sat_state){
 	Lit* last_lit = NULL;
 	unsigned long index_last_literal = 0;
 	for(unsigned long i =0; i< clause->num_literals_in_clause; i++){
 		Lit* cur_falsified_literal = clause->literals[i];
 		for(unsigned long j=0; j< sat_state->num_literals_in_decision; j++){
 			if(sat_literal_var(cur_falsified_literal)->index == sat_literal_var(sat_state->decisions[j])->index){
-				if(j >= index_last_literal)
-					index_last_literal = j;
-				else
-					continue;
+				//check predicate here as well
+				if(is_predicate_hold(cur_falsified_literal, sat_state)){
+					if(j >= index_last_literal)
+						index_last_literal = j;
+					else
+						continue;
+				}
 			}
 		}
 	}
+
 	last_lit = sat_state->decisions[index_last_literal];
 
 	return last_lit;
@@ -273,28 +303,6 @@ static void initialize_learning_clause(Clause* wl_1, Clause* conflict_clause){
 
 }
 
-static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
-	BOOLEAN predicate_value =0;
-	// not a decision TODO: what if the UIP was the decision!?
-	//SALMA: I changed this
-#ifdef DEBUG
-	printf("Is predicate hold for literal: %ld, at decision: %ld  \t",lit->sindex, lit->decision_level );
-
-#endif
-	if((lit->decision_level == sat_state->current_decision_level) && (sat_literal_var(lit)->antecedent != NULL)){
-	//if((lit->decision_level == sat_state->current_decision_level) && lit->antecedent != NULL)
-		predicate_value = 1;
-#ifdef DEBUG
-	printf("with antecedent = %ld  \t", sat_literal_var(lit)->antecedent->cindex);
-
-#endif
-	}
-
-#ifdef DEBUG
-	printf("%ld\n",predicate_value);
-#endif
-	return predicate_value;
-}
 
 //static void unit_resolution(Clause* clause, Clause* unit_clause, Clause* newclause){
 //	// get the literal from the unit clause
@@ -395,25 +403,29 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 
 	while(fixed_point_achieved == 0){
 		Clause* alpha_l = NULL;
-		for(unsigned long i=0; i< wl_1->num_literals_in_clause; i++){
-			Lit* lit = wl_1->literals[i];
-#ifdef DEBUG
-	printf("examine first literal in wl_1 %ld\n",lit->sindex );
-#endif
-	//TODO: Put here a code to call function last_falsified_literal however, the last falsified literal is not necessarily be at the last decision level!!! because of undo decide literal
-	// TODO: how to solve it!!!
-			if(is_predicate_hold(lit, sat_state)){
-				alpha_l = sat_literal_var(lit)->antecedent; // alpha_l will evaluate to a unit clause in the current setting
-				//SALMA: I changed this
-				//alpha_l = lit->antecedent;
-				//break; // break for
-				//maybe continue
+//		for(unsigned long i=0; i< wl_1->num_literals_in_clause; i++){
+//			Lit* lit = wl_1->literals[i];
+//#ifdef DEBUG
+//	printf("examine first literal in wl_1 %ld\n",lit->sindex );
+//#endif
+//	//TODO: Put here a code to call function last_falsified_literal however, the last falsified literal is not necessarily be at the last decision level!!! because of undo decide literal
+//	// TODO: how to solve it!!!
+//			if(is_predicate_hold(lit, sat_state)){
+//				alpha_l = sat_literal_var(lit)->antecedent; // alpha_l will evaluate to a unit clause in the current setting
+//				//SALMA: I changed this
+//				//alpha_l = lit->antecedent;
+//				//break; // break for
+//				//maybe continue
+//
+//				//SALMA: here maybe check whether this lit is falsified last in this clause or not. if yes then break else continue
+//
+//				continue;
+//			}
+//		}
 
-				//SALMA: here maybe check whether this lit is falsified last in this clause or not. if yes then break else continue
-
-				continue;
-			}
-		}
+		Lit* lit = last_falsified_literal_with_predicate(wl_1,sat_state);
+		if(lit != NULL)
+			alpha_l = sat_literal_var(lit)->antecedent;
 
 // added a part in the algorithm to compromise for the the non backtracking to the assertion level
 		if(alpha_l != NULL){

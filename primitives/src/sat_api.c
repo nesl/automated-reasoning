@@ -523,6 +523,7 @@ SatState* sat_state_new(const char* file_name) {
 	  parseDIMACS(cnf_file, sat_state);
 #ifdef DEBUG
 	  printf("Number of clauses in delta = %ld\n",sat_state->num_clauses_in_delta);
+
 #endif
   }
 
@@ -530,6 +531,8 @@ SatState* sat_state_new(const char* file_name) {
 
 
   initialize_vsids_scores(sat_state);
+
+  print_all_clauses(sat_state);
 
   return sat_state;
 }
@@ -626,7 +629,6 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 
 		*num_elements = num;
 		*capacity = cap;
-
 }
 static BOOLEAN unit_resolution_case_1(SatState* sat_state){
 #ifdef DEBUG
@@ -805,12 +807,8 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 #endif
 
 // since the order of the decision level in the decision list is not necessarily in ascending order
-// so to avoid the headache of removing from inside a list I create a pending list and then update the decision list in the end
-	// Create pending literal list
-	Lit** decision_pending_list = (Lit**)malloc(sizeof(Lit*));
-	unsigned long max_size_decision_pending_list = 1;
-	unsigned long num_decision_pending_lit = 0;
-
+// so to avoid the headache of removing from inside a list I remove all the elements after the occurence of the current decision
+// later on the correct implications will be implied again
 
 	for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
 #ifdef DEBUG
@@ -819,49 +817,47 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 
 		if(sat_state->decisions[i]->decision_level == sat_state->current_decision_level ){
 #ifdef DEBUG
-			printf("clean literal: %ld\n",sat_state->decisions[i]->sindex);
+			printf("clean literal: %ld\n and any literal afterwards",sat_state->decisions[i]->sindex);
 #endif
 			// to avoid cleaning the literal twice
 			//(because u may have the literal and its opposite in the decision at the contradiction)
-			// I have to add this if statement
-			if(sat_state->decisions[i]->LitState == 1){
-				Var* var = sat_literal_var(sat_state->decisions[i]);
-				var->antecedent = NULL;
-				sat_undo_clauses_state(sat_state->decisions[i], sat_state);
+			// I have to add this if statement (after the current modification i may remove this if)
+			for(unsigned long cleanidx = i; cleanidx < sat_state->num_literals_in_decision; cleanidx++){
+				if(sat_state->decisions[cleanidx]->LitState == 1){
+					Var* var = sat_literal_var(sat_state->decisions[cleanidx]);
+					var->antecedent = NULL;
+					sat_undo_clauses_state(sat_state->decisions[cleanidx], sat_state);
 
-				Lit* poslit = var->posLit;
-			//	poslit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals. This value will be overwritten later
-				poslit->LitState = 0;
-				poslit->LitValue = 'u';
-				//poslit->num_watched_clauses = 0; // watched clauses should stay the same
+					Lit* poslit = var->posLit;
+				//	poslit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals. This value will be overwritten later
+					poslit->LitState = 0;
+					poslit->LitValue = 'u';
+					//poslit->num_watched_clauses = 0; // watched clauses should stay the same
 
 
-				Lit* neglit = var->negLit;
-			//	neglit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals
-				neglit->LitState = 0;
-				neglit->LitValue = 'u';
-				//neglit->num_watched_clauses = 0; //watched clauses should stay the same
+					Lit* neglit = var->negLit;
+				//	neglit->decision_level = 1;  // don't undo it because of at_asserting_level in order not to overwrite the learning clause literals
+					neglit->LitState = 0;
+					neglit->LitValue = 'u';
+					//neglit->num_watched_clauses = 0; //watched clauses should stay the same
+
+					num_reduced_decisions ++;
+				}
 			}
-			num_reduced_decisions ++;
+			break;
+#ifdef DEBUG
+			printf("Number of reduced decision: %ld\n",num_reduced_decisions);
+#endif
 		}
-		else{
-			add_literal_to_list(decision_pending_list,  sat_state->decisions[i] , &max_size_decision_pending_list, &num_decision_pending_lit);
-			printf("add literal %ld to decision pending\n", sat_state->decisions[i]->sindex);
-		}
-
-	}
-	for(unsigned long j =0; j < num_decision_pending_lit; j++){
-		Lit* pending_lit = decision_pending_list[j];
-		sat_state->decisions[j] = pending_lit;
 	}
 
 	//update the current decision level
 	sat_state->num_literals_in_decision = sat_state->num_literals_in_decision - num_reduced_decisions; // you reduce another one which is the implied driven literal at the end
-
-	//TODO: free pending list here
-	if(decision_pending_list != NULL)
-		FREE(decision_pending_list);
-
+#ifdef DEBUG
+	for(unsigned long i = 0; i < sat_state->num_literals_in_decision; i++){
+		printf("print decision list after undo: %ld at level %ld\n",sat_state->decisions[i]->sindex, sat_state->decisions[i]->decision_level );
+	}
+#endif
 
 	//TODO: don't decrease this for now due to how the main function is constructed! the decision level is reduced after adding the asserting clause
 	//sat_state->current_decision_level -- ;

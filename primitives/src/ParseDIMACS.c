@@ -39,6 +39,9 @@ void add_clause_to_literal(Lit* lit, Clause* clause){
 	}
 
 	lit->list_of_containing_clauses[lit->num_containing_clause++] = clause->cindex;
+//#ifdef DEBUG
+//	printf("adding clause %ld to the list of containing clauses for literal %ld\n",lit->list_of_containing_clauses[lit->num_containing_clause], lit->sindex);
+//#endif
 
 }
 
@@ -202,9 +205,9 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 	pch = strtok(line, " ");
 
 	while (pch != NULL){
-#ifdef DEBUG
-			printf("%s\n", pch);
-#endif
+//#ifdef DEBUG
+//			printf("%s\n", pch);
+//#endif
 			if(atol(pch) == END_OF_CLAUSE_LINE){
 				break;
 			}
@@ -225,9 +228,9 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 			 add_clause_to_variable(var, clause);
 			 add_clause_to_literal(clause->literals[countvariables], clause);
 
-#ifdef DEBUG
-			 print_clause_containing_literal(clause->literals[countvariables]);
-#endif
+//#ifdef DEBUG
+//			 print_clause_containing_literal(clause->literals[countvariables]);
+//#endif
 			 countvariables ++;
 
 		pch = strtok (NULL, " ");
