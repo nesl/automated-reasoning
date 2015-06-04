@@ -3,6 +3,8 @@
 import argparse
 import os
 import subprocess
+import fractions
+import collections
 
 parser = argparse.ArgumentParser(formatter_class = argparse.RawDescriptionHelpFormatter, description = """
 
@@ -22,18 +24,20 @@ prefixes, as follows:
                   It must contain either the string ``SATISFIABLE''
                   or the string ``UNSATISFIABLE''.
 
-Further, this script expects the SAT-solver executable to print to
-stdout a single line of text for each problem it is invoked upon.
-This line should contain two pieces of information separated by a
-comma (``,''):
-
-Firstly, it should contain the solver's answer (``SATISFIABLE''
-or ``UNSATISFIABLE'')
-
-After the comma, it should contain the number of clauses
-learned while solving the problem
-
-Example of expected SAT-solver output: ``UNSATISFIABLE,128''
+###  Needs to be updated: 
+###
+###  Further, this script expects the SAT-solver executable to print to
+###  stdout a single line of text for each problem it is invoked upon.
+###  This line should contain two pieces of information separated by a
+###  comma (``,''):
+###  
+###  Firstly, it should contain the solver's answer (``SATISFIABLE''
+###  or ``UNSATISFIABLE'')
+###  
+###  After the comma, it should contain the number of clauses
+###  learned while solving the problem
+###  
+###  Example of expected SAT-solver output: ``UNSATISFIABLE,128''
 
 This script will log its data to stdout.
 
@@ -62,14 +66,46 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+class Metadata:
+    pass
+
+def is_number(str):
+    try:
+        float(str)
+        return True
+    except ValueError:
+        return False
+
+# Parses the metadata dump printed by the solver
+def parse_metadatastr(metadatastr):
+    metadata = Metadata()
+
+    for line in metadatastr.splitlines():
+        if line.startswith("SAT"):
+            metadata.answer = "SATISFIABLE"
+        if line.startswith("UNSAT"):
+            metadata.answer = "UNSATISFIABLE"
+        if line.startswith("mem"):
+            for field in line.split():
+                if field.isdigit():
+                    metadata.mem = int(field)
+                    break
+        if line.startswith("time"):
+            for field in line.split():
+                if is_number(field):
+                    metadata.time = float(field)
+                    break
+
+    return metadata
+
 def run_solver_on_basename(solver, basename):
-    solver_buffer = subprocess.check_output([solver, "-c", "%s.cnf" % basename])
-    solver_output = solver_buffer.decode("utf-8").rstrip()
+    solverbuf = subprocess.check_output([solver, "-c", "%s.cnf" % basename])
+    solverout = solverbuf.decode("utf-8").rstrip()
 
-    solver_answer = solver_output.split(",")[0]
-    solver_metric = int(solver_output.split(",")[1])
+    metadatastr = solverout.split("########\n")[-1]
+    # Solver metadata should begin after a string of 8 sharp signs
 
-    return solver_answer, solver_metric
+    return parse_metadatastr(metadatastr);
 
 def handle_sat_problem(args, filename):
     if filename.endswith(".cnf"):
@@ -79,9 +115,9 @@ def handle_sat_problem(args, filename):
         solution = open(solfilename, "r").read().rstrip("\n")
 
         for repidx in range(args.reps):
-            answer, metric = run_solver_on_basename(args.exec, filename)
-            if (answer == solution):
-                print("   Correct on %s" % basename)
+            results = run_solver_on_basename(args.exec, filename)
+            if (results.answer == solution):
+                print("   Correct on {:16} (results in {:.5} seconds using {} pages)".format(basename, results.time, results.mem))
             else:
                 print("!! Invalid on %s" % basename)
     else:
