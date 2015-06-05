@@ -25,20 +25,40 @@ prefixes, as follows:
                   It must contain either the string ``SATISFIABLE''
                   or the string ``UNSATISFIABLE''.
 
-###  Needs to be updated: 
-###
-###  Further, this script expects the SAT-solver executable to print to
-###  stdout a single line of text for each problem it is invoked upon.
-###  This line should contain two pieces of information separated by a
-###  comma (``,''):
-###  
-###  Firstly, it should contain the solver's answer (``SATISFIABLE''
-###  or ``UNSATISFIABLE'')
-###  
-###  After the comma, it should contain the number of clauses
-###  learned while solving the problem
-###  
-###  Example of expected SAT-solver output: ``UNSATISFIABLE,128''
+Further, this script expects the SAT-solver executable to print
+output in the following form:
+
+    The solver may begin by printing any output it wants to stderr
+    or stdout.
+
+    Once it has done solving the problem the solver must print
+    its solution followed by some metadata about the solving run.
+
+    This data must be preceeded by a line containing only eight
+    sharp marks (``########'') to indicate to the test script that
+    the solver has done its business and will now provide output.
+
+    After the line of eight sharp marks, the solver must print its
+    answer, either ``SATISFIABLE'' or ``UNSATISFIABLE''.
+
+    Next, it must print a line starting with ``time'' and containing
+    a whitespace-delineated field representing the runtime as a
+    decimal number of seconds.
+
+    Next, it must print a line starting with ``mem'' and containing
+    a whitespace-delineated field representing the memory usage as
+    as an integer number of pages.
+
+    The solver's output should be terminated with a newline.
+
+Example of expected output of the SAT solver:
+
+    debugging something...
+    debugging something else...
+    ########
+    UNSATISFIABLE
+    time = 0.02254 seconds
+    mem = 1982 pages
 
 This script will log its data to stdout.
 
@@ -97,8 +117,6 @@ def parse_metadatastr(metadatastr):
     return metadata
 
 def run_solver_on_file(solver, filepath):
-    print("   Running solver on {}...".format(os.path.basename(filepath)))
-
     solverproc = subprocess.Popen(
         [solver, "-c", filepath],
         stderr = subprocess.DEVNULL,
@@ -108,15 +126,28 @@ def run_solver_on_file(solver, filepath):
 
     (solverout, _) = solverproc.communicate()
 
-    print("      >>>>> Begin solver output")
-    for line in solverout.splitlines():
-        print("      >> {}".format(line))
-    print("      >>>>> End solver output")
+    # Solver metadata should begin after a line of 8 sharp signs
+    mdstr = solverout.split("########\n")[-1]
 
-    metadatastr = solverout.split("########\n")[-1]
-    # Solver metadata should begin after a string of 8 sharp signs
+    metadata = parse_metadatastr(mdstr);
+    if 'answer' not in metadata:
+        metadata['parse_successful'] = False
 
-    return parse_metadatastr(metadatastr);
+        lines = solverout.splitlines()
+        if len(lines) > 0:
+            print("!! Wasn't able to parse solver's output for {}".format(os.path.basename(filepath)))
+
+            print("\n   >> Log of solver output")
+            for line in lines:
+                print("   >> {}".format(line))
+            print("   >> End of solver output")
+        else:
+            print("!! Solver returned no output for {}".format(os.path.basename(filepath)))
+
+    else:
+        metadata['parse_successful'] = True
+
+    return metadata
 
 def handle_sat_problem(args, filename):
     if filename.endswith(".cnf"):
@@ -128,16 +159,15 @@ def handle_sat_problem(args, filename):
 
         for repidx in range(args.reps):
             results = run_solver_on_file(args.exec, filepath)
-            if 'answer' in results:
+            if results['parse_successful']:
                 if (results['answer'] == solution):
-                    print("$$ Correct on {} (results in {:.5} seconds using {} pages)".format(basename, results['time'], results['mem']))
+                    print("$$ Correct ({}) on {} ({:.5} seconds using {} pages)".format(results['answer'], basename, results['time'], results['mem']))
                 else:
-                    print("-> Invalid on %s" % basename)
-            else:
-                print("!! Wasn't able to read an answer from the solver")
+                    print("-> Incorrect (claimed {}, was {}) for {}".format(results['answer'], solution, basename))
     else:
         raise ValueError("CNF filenames must end with the extension ``.cnf''")
 
+print("\nRunning SAT solver on files in {}\n".format(args.problem_dir))
 for filename in os.listdir(args.problem_dir):
     if filename.endswith(".cnf"):
         handle_sat_problem(args, filename)

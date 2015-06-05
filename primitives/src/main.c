@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
 	getdelim(&statm_buf, &n, ' ', statm_fp);
 
 	long int pages = strtol(statm_buf, NULL, 10);
-	printf("mem = %d pages\n", pages);
+	printf("mem  = %d pages\n", pages);
 
 	free(statm_buf);
 
