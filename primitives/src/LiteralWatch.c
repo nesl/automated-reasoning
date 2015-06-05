@@ -342,11 +342,15 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit*** literals_list, unsigned lo
 					unsigned long num_free_literals = 0;
 
 					// I have to check the other watched literal
-					Lit* the_other_watched_literal = NULL;
+					Lit* the_other_watched_literal = 0xdeadbeef;
 					if(resolved_literal->sindex == wclause->L1->sindex)
 						the_other_watched_literal = wclause->L2;
 					else if(resolved_literal->sindex == wclause->L2->sindex)
 						the_other_watched_literal = wclause->L1;
+
+					// FIXME the_other_watched_literal is not always set by this point
+					// but is being dereferenced in the loop below
+					printf("Value of the_other_watched_literal = %x\n", the_other_watched_literal);
 
 
 					for(unsigned long l = 0; l < wclause->num_literals_in_clause; l++){

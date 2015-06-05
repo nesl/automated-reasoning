@@ -154,7 +154,7 @@ def run_solver_on_file(solver, filepath):
                 os.path.basename(filepath)
             ))
 
-            print("\n    >> Log of solver output")
+            print("    >> Log of solver output")
             for line in lines:
                 print("    >> {}".format(line))
             print("    >> End of solver output")
