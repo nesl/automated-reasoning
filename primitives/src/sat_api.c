@@ -673,7 +673,7 @@ static BOOLEAN unit_resolution_case_1(SatState* sat_state){
 	printf("\n");
 #endif
 		// run the two literal watch based on the new decision
-		BOOLEAN ret = two_literal_watch(sat_state, literals_in_last_decision, num_last_decision_lit,max_size_last_decision_list);
+		BOOLEAN ret = two_literal_watch(sat_state, literals_in_last_decision, &num_last_decision_lit,&max_size_last_decision_list);
 
 #ifdef DEBUG
 	printf("----- sat _decide_literal ---- after running unit resolution\n");
@@ -713,7 +713,7 @@ static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 	printf("\n");
 #endif
 
-	BOOLEAN ret = two_literal_watch(sat_state,sat_state->decisions, sat_state->num_literals_in_decision,sat_state->num_literals_in_decision );
+	BOOLEAN ret = two_literal_watch(sat_state,sat_state->decisions, & (sat_state->num_literals_in_decision), & (sat_state->num_literals_in_decision) );
 
 #ifdef DEBUG
 	printf("----- sat _assert_clause ---- after running unit resolution\n");
@@ -787,7 +787,7 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 //		unsigned long num_decision_lit = sat_state->num_literals_in_decision;
 
 		//literals_in_decision = sat_state->decisions;
-		return two_literal_watch(sat_state, sat_state->decisions, sat_state->num_literals_in_decision, sat_state->num_literals_in_decision);
+		return two_literal_watch(sat_state, sat_state->decisions, & (sat_state->num_literals_in_decision), & (sat_state->num_literals_in_decision));
 	}
 
 }

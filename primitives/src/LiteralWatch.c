@@ -8,6 +8,7 @@
 #include "LiteralWatch.h"
 #include "global.h"
 #include <assert.h>
+#include <stdlib.h>
 
 // local value for this file
 //static BOOLEAN INIT_LITERAL_WATCH = 0;
@@ -272,7 +273,7 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 The algorithm taken from the Class Notes for CS264A, UCLA
 
 ******************************************************************************/
-BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned long num_elements, unsigned long capacity){
+BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned long * num_elements, unsigned long * capacity){
 
 	// Once I entered here I must have elements in the decision array
 	assert(sat_state->num_literals_in_decision > 0);
@@ -286,9 +287,10 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 	//TODO: Due to recursion of pending list we may need to consider more than one decided literal then we need a list that captures all literals of last decision
 
 	//loop on all decided literals
-	Lit** literals_in_decision = literals_list;
-	unsigned long max_size_decision_list = capacity;
-	unsigned long num_decision_lit = num_elements;
+
+	// Lit** literals_in_decision = literals_list;
+	// unsigned long max_size_decision_list = capacity;
+	// unsigned long num_decision_lit = num_elements;
 
 
 	// Create pending literal list
@@ -296,17 +298,17 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 	unsigned long max_size_pending_list = 1;
 	unsigned long num_pending_lit = 0;
 
-	for(unsigned long i =0; i<num_decision_lit; i++){
+	for(unsigned long i =0; i< *num_elements; i++){
 #ifdef DEBUG
 		printf("--------------------------------------\n");
 		printf("Decision list now in two literal watch: ");
-		for(unsigned long j =0; j< num_decision_lit;j++){
-			printf("%ld\t", literals_in_decision[j]->sindex );
+		for(unsigned long j =0; j<  *num_elements;j++){
+			printf("%ld\t", literals_list[j]->sindex );
 		}
 		printf("\n");
 #endif
 		//Lit* decided_literal = sat_state->decisions[sat_state->num_literals_in_decision -1];
-		Lit* decided_literal = literals_in_decision[i];
+		Lit* decided_literal = literals_list[i];
 		Lit* resolved_literal = get_resolved_lit(decided_literal, sat_state);
 
 #ifdef DEBUG
@@ -494,7 +496,14 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 						sat_state->decisions[sat_state->num_literals_in_decision++] = pending_lit;
 
 						//update list of literals in last decision because this is the main loop
-						literals_in_decision[num_decision_lit++] = pending_lit;
+
+						if (*num_elements >= *capacity)
+						{
+							*capacity *= MALLOC_GROWTH_RATE;
+							literals_list = realloc(literals_list, *capacity);
+						}
+
+						literals_list[(*num_elements)++] = pending_lit;
 
 //					if (fails == 1){
 //						contradiction_flag = 1;
