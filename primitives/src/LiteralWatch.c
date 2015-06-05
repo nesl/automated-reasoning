@@ -236,7 +236,7 @@ static Lit* get_resolved_lit(Lit* decided_literal, SatState* sat_state){
 	return resolved_literal;
 }
 
-static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, unsigned long* num_elements){
+static void add_literal_to_list(Lit*** list, Lit* lit, unsigned long* capacity, unsigned long* num_elements){
 
 	unsigned long cap = *capacity;
 	unsigned long num = *num_elements;
@@ -244,10 +244,10 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 	if(num >= cap){
 		// needs to realloc the size
 		cap =num * MALLOC_GROWTH_RATE;
-		list = (Lit**) realloc(list , sizeof(Lit*) * cap);
+		*list = (Lit**) realloc(*list , sizeof(Lit*) * cap);
 	}
 
-		list[num++] = lit;
+		(*list)[num++] = lit;
 
 		*num_elements = num;
 		*capacity = cap;
@@ -273,7 +273,7 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 The algorithm taken from the Class Notes for CS264A, UCLA
 
 ******************************************************************************/
-BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned long * num_elements, unsigned long * capacity){
+BOOLEAN two_literal_watch(SatState* sat_state, Lit*** literals_list, unsigned long * num_elements, unsigned long * capacity){
 
 	// Once I entered here I must have elements in the decision array
 	assert(sat_state->num_literals_in_decision > 0);
@@ -303,12 +303,12 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 		printf("--------------------------------------\n");
 		printf("Decision list now in two literal watch: ");
 		for(unsigned long j =0; j<  *num_elements;j++){
-			printf("%ld\t", literals_list[j]->sindex );
+			printf("%ld\t", (*literals_list)[j]->sindex );
 		}
 		printf("\n");
 #endif
 		//Lit* decided_literal = sat_state->decisions[sat_state->num_literals_in_decision -1];
-		Lit* decided_literal = literals_list[i];
+		Lit* decided_literal = (*literals_list)[i];
 		Lit* resolved_literal = get_resolved_lit(decided_literal, sat_state);
 
 #ifdef DEBUG
@@ -388,7 +388,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 								printf("Antecedent: \n");
 								print_clause(sat_literal_var(the_other_watched_literal)->antecedent);
 #endif
-								add_literal_to_list(pending_list,  the_other_watched_literal , &max_size_pending_list, &num_pending_lit);
+								add_literal_to_list(&pending_list,  the_other_watched_literal , &max_size_pending_list, &num_pending_lit);
 #ifdef DEBUG
 								printf("Add the free literal %ld to the pending list with antecedent %ld\n",the_other_watched_literal->sindex, (sat_literal_var(the_other_watched_literal)->antecedent)->cindex );
 #endif
@@ -500,10 +500,10 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 						if (*num_elements >= *capacity)
 						{
 							*capacity *= MALLOC_GROWTH_RATE;
-							literals_list = realloc(literals_list, *capacity);
+							*literals_list = realloc(*literals_list, sizeof(Lit * ) * (*capacity));
 						}
 
-						literals_list[(*num_elements)++] = pending_lit;
+						(*literals_list)[(*num_elements)++] = pending_lit;
 
 //					if (fails == 1){
 //						contradiction_flag = 1;
