@@ -4,7 +4,6 @@ import argparse
 import os
 import sys
 import subprocess
-import fractions
 import collections
 
 parser = argparse.ArgumentParser(formatter_class = argparse.RawDescriptionHelpFormatter, description = """
@@ -31,11 +30,11 @@ output in the following form:
     The solver may begin by printing any output it wants to stderr
     or stdout.
 
-    Once it has done solving the problem the solver must print
-    its solution followed by some metadata about the solving run.
+    Once it is done solving the problem the solver must print
+    its solution and some metadata about the solving run.
 
-    This data must be preceeded by a line containing only eight
-    sharp marks (``########'') to indicate to the test script that
+    This output must be preceeded by a line containing only eight
+    sharp marks (``########'') to indicate to the tester script that
     the solver has done its business and will now provide output.
 
     After the line of eight sharp marks, the solver must print its
@@ -55,6 +54,7 @@ Example of expected output of the SAT solver:
 
     debugging something...
     debugging something else...
+    anything can go here...
     ########
     UNSATISFIABLE
     time = 0.02254 seconds
@@ -87,6 +87,16 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 def is_number(str):
     try:
         float(str)
@@ -114,6 +124,11 @@ def parse_metadatastr(metadatastr):
                     metadata['time'] = float(field)
                     break
 
+    if 'answer' not in metadata:
+        metadata['parse_successful'] = False
+    else:
+        metadata['parse_successful'] = True # TODO proper checking
+
     return metadata
 
 def run_solver_on_file(solver, filepath):
@@ -130,22 +145,24 @@ def run_solver_on_file(solver, filepath):
     mdstr = solverout.split("########\n")[-1]
 
     metadata = parse_metadatastr(mdstr);
-    if 'answer' not in metadata:
-        metadata['parse_successful'] = False
 
+    if not metadata['parse_successful']:
         lines = solverout.splitlines()
         if len(lines) > 0:
-            print("!! Wasn't able to parse solver's output for {}".format(os.path.basename(filepath)))
+            print("  {} Wasn't able to parse solver's output for {}".format(
+                bcolors.FAIL + "?" + bcolors.ENDC,
+                os.path.basename(filepath)
+            ))
 
-            print("\n   >> Log of solver output")
+            print("\n    >> Log of solver output")
             for line in lines:
-                print("   >> {}".format(line))
-            print("   >> End of solver output")
+                print("    >> {}".format(line))
+            print("    >> End of solver output")
         else:
-            print("!! Solver returned no output for {}".format(os.path.basename(filepath)))
-
-    else:
-        metadata['parse_successful'] = True
+            print("  {} Solver returned no output for {}".format(
+                bcolors.FAIL + "∅" + bcolors.ENDC,
+                os.path.basename(filepath))
+            )
 
     return metadata
 
@@ -158,7 +175,7 @@ def handle_sat_problem(args, filename):
         try:
             solution = open(solpath, 'r').read().rstrip("\n")
         except Exception:
-            print("## Error: found {0}.cnf but no {0}.sol".format(basename))
+            print("!!! Error: found {0}.cnf but no {0}.sol".format(basename))
             return
 
 
@@ -166,9 +183,20 @@ def handle_sat_problem(args, filename):
             results = run_solver_on_file(args.exec, filepath)
             if results['parse_successful']:
                 if (results['answer'] == solution):
-                    print("$$ Correct ({}) on {} ({:.5} seconds using {} pages)".format(results['answer'], basename, results['time'], results['mem']))
+                    print("  {} Correct ({}) on {} ({:.5} seconds using {} pages)".format(
+                        bcolors.OKGREEN + bcolors.BOLD + "✓" + bcolors.ENDC,
+                        results['answer'],
+                        basename,
+                        results['time'],
+                        results['mem'])
+                    )
                 else:
-                    print("-> Incorrect (claimed {}, was {}) for {}".format(results['answer'], solution, basename))
+                    print("  {} Incorrect (claimed {}, was {}) on {}".format(
+                        bcolors.FAIL + "❌" + bcolors.ENDC,
+                        results['answer'],
+                        solution,
+                        basename)
+                    )
     else:
         raise ValueError("CNF filenames must end with the extension ``.cnf''")
 
