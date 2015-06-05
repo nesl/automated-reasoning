@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import sys
 import subprocess
 import fractions
 import collections
@@ -66,9 +67,6 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-class Metadata:
-    pass
-
 def is_number(str):
     try:
         float(str)
@@ -78,29 +76,42 @@ def is_number(str):
 
 # Parses the metadata dump printed by the solver
 def parse_metadatastr(metadatastr):
-    metadata = Metadata()
+    metadata = {}
 
     for line in metadatastr.splitlines():
         if line.startswith("SAT"):
-            metadata.answer = "SATISFIABLE"
+            metadata['answer'] = "SATISFIABLE"
         if line.startswith("UNSAT"):
-            metadata.answer = "UNSATISFIABLE"
-        if line.startswith("mem"):
+            metadata['answer'] = "UNSATISFIABLE"
+        if line.startswith('mem'):
             for field in line.split():
                 if field.isdigit():
-                    metadata.mem = int(field)
+                    metadata['mem'] = int(field)
                     break
-        if line.startswith("time"):
+        if line.startswith('time'):
             for field in line.split():
                 if is_number(field):
-                    metadata.time = float(field)
+                    metadata['time'] = float(field)
                     break
 
     return metadata
 
-def run_solver_on_basename(solver, basename):
-    solverbuf = subprocess.check_output([solver, "-c", "%s.cnf" % basename])
-    solverout = solverbuf.decode("utf-8").rstrip()
+def run_solver_on_file(solver, filepath):
+    print("   Running solver on {}...".format(os.path.basename(filepath)))
+
+    solverproc = subprocess.Popen(
+        [solver, "-c", filepath],
+        stderr = subprocess.DEVNULL,
+        stdout = subprocess.PIPE,
+        universal_newlines = True
+    )
+
+    (solverout, _) = solverproc.communicate()
+
+    print("      >>>>> Begin solver output")
+    for line in solverout.splitlines():
+        print("      >> {}".format(line))
+    print("      >>>>> End solver output")
 
     metadatastr = solverout.split("########\n")[-1]
     # Solver metadata should begin after a string of 8 sharp signs
@@ -110,16 +121,20 @@ def run_solver_on_basename(solver, basename):
 def handle_sat_problem(args, filename):
     if filename.endswith(".cnf"):
         basename = ".".join(filename.split(".")[:-1])
-        solfilename = os.path.join(args.problem_dir, basename + ".sol")
+        solpath = os.path.join(args.problem_dir, basename + ".sol")
+        filepath = os.path.join(args.problem_dir, basename + ".cnf")
 
-        solution = open(solfilename, "r").read().rstrip("\n")
+        solution = open(solpath, 'r').read().rstrip("\n")
 
         for repidx in range(args.reps):
-            results = run_solver_on_basename(args.exec, filename)
-            if (results.answer == solution):
-                print("   Correct on {:16} (results in {:.5} seconds using {} pages)".format(basename, results.time, results.mem))
+            results = run_solver_on_file(args.exec, filepath)
+            if 'answer' in results:
+                if (results['answer'] == solution):
+                    print("$$ Correct on {} (results in {:.5} seconds using {} pages)".format(basename, results['time'], results['mem']))
+                else:
+                    print("-> Invalid on %s" % basename)
             else:
-                print("!! Invalid on %s" % basename)
+                print("!! Wasn't able to read an answer from the solver")
     else:
         raise ValueError("CNF filenames must end with the extension ``.cnf''")
 
