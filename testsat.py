@@ -155,7 +155,12 @@ def handle_sat_problem(args, filename):
         solpath = os.path.join(args.problem_dir, basename + ".sol")
         filepath = os.path.join(args.problem_dir, basename + ".cnf")
 
-        solution = open(solpath, 'r').read().rstrip("\n")
+        try:
+            solution = open(solpath, 'r').read().rstrip("\n")
+        except Exception:
+            print("## Error: found {0}.cnf but no {0}.sol".format(basename))
+            return
+
 
         for repidx in range(args.reps):
             results = run_solver_on_file(args.exec, filepath)
