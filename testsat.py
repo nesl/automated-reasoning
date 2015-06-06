@@ -248,8 +248,8 @@ def handle_vsids_problem(args, filename):
         vsids_results = run_solver(args, filepath, ['-V'])
         if norm_results['parse_successful'] and vsids_results['parse_successful']:
             if (norm_results['answer'] == vsids_results['answer'] == solution):
-                print("{:20} & {:>8} & {: >8} & {: >8} & {: >8} & {: >8} & {: >8} \\\\".format(
-                    basename,
+                print("{:20} & {:>8} & {: >8} & {: >8} & {: >8} & {: >8} & {: >8} \\\\ \\hline".format(
+                    basename.replace("_", "\_"),
                     "{:4.4}".format(norm_results['time']),
                     str(norm_results['mem']),
                     "{:4.4}".format(vsids_results['time']),
@@ -275,10 +275,10 @@ def handle_vsids_problem(args, filename):
 print("\nRunning SAT solver on files in {}\n".format(args.problem_dir))
 
 if (args.vsids):
-    print("% Note: be sure to \\usepackage{units} to print this properly")
-    print("\\begin{tabular}{ | l || r | r || r | r | }")
+    print("% Note: be sure to \\usepackage{units} and \\usepackage{amsmath} to print this properly")
+    print("\\begin{tabular}{ | l || c | c | c | c || c | c | }")
     print("\\hline")
-    print("CNF & $t_\\text{norm}$ & $\\text{Mem}_\\text{norm}$ & $t_\\text{VSIDS}$ & $\\text{Mem}_\\text{VSIDS}$ & Speedup ($\\nicefrac{t_\\text{norm}}{t_\\text{VSIDS}}$) & $\\nicefrac{\\text{Mem}_\\text{norm}}{\\text{Mem}_\\text{VSIDS}}$ \\")
+    print("CNF & $t_\\text{norm}$ & $\\text{Mem}_\\text{norm}$ & $t_\\text{VSIDS}$ & $\\text{Mem}_\\text{VSIDS}$ & Speedup ($\\nicefrac{t_\\text{norm}}{t_\\text{VSIDS}}$) & $\\nicefrac{\\text{Mem}_\\text{norm}}{\\text{Mem}_\\text{VSIDS}}$ \\\\ \\hline")
     print("\\hline")
     for filename in os.listdir(args.problem_dir):
         if filename.endswith(".cnf"):
