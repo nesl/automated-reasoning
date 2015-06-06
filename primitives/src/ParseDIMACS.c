@@ -206,7 +206,7 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 
 
 	//separate the string into space separated tokens
-	pch = strtok(line, " ");
+	pch = strtok(line, " \t");
 
 	while (pch != NULL){
 //#ifdef DEBUG
@@ -237,7 +237,7 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 //#endif
 			 countvariables ++;
 
-		pch = strtok (NULL, " ");
+		pch = strtok (NULL, " \t");
 	}
 
 	clause->num_literals_in_clause = countvariables;
