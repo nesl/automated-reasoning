@@ -81,7 +81,8 @@ struct var {
 
 	/* for the non-chronological backtracking UIP */
 	// the unit clause used for implying the (variable) is said to be the antecedent of this literal(variable)
-	Clause* antecedent;									// antecedent clause
+	//Clause* antecedent;									// antecedent clause
+	unsigned long antecedent;
 
 	SatState* sat_state; // I had to keep a pointer of the sat state here due to the requirements of some APIs
 

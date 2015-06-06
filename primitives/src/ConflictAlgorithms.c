@@ -47,11 +47,11 @@ static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
 #ifdef DEBUG
 	printf("Is predicate hold for literal: %ld, at decision: %ld  \t",lit->sindex, lit->decision_level );
 #endif
-	if((lit->decision_level == sat_state->current_decision_level) && (sat_literal_var(lit)->antecedent != NULL)){
+	if((lit->decision_level == sat_state->current_decision_level) && (sat_literal_var(lit)->antecedent != 0)){
 	//if((lit->decision_level == sat_state->current_decision_level) && lit->antecedent != NULL)
 		predicate_value = 1;
 #ifdef DEBUG
-	printf("with antecedent = %ld  \t", sat_literal_var(lit)->antecedent->cindex);
+	printf("with antecedent = %ld  \t", sat_literal_var(lit)->antecedent);
 #endif
 	}
 
@@ -120,8 +120,19 @@ static void update_delta_with_alpha(SatState* sat_state){
 		sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
 		sat_state->delta[sat_state->num_clauses_in_delta].L2 = sat_state->delta[sat_state->num_clauses_in_delta].literals[1];
 		//update the state of the literals with that new watching clause
+#ifdef DEBUG
+	printf("ADDING watching clause: Literal L1 = %ld, Literal L2 = %ld, clause = %ld", sat_state->delta[sat_state->num_clauses_in_delta].L1->sindex, sat_state->delta[sat_state->num_clauses_in_delta].L2->sindex, sat_state->delta[sat_state->num_clauses_in_delta].cindex);
+	print_clause(&sat_state->delta[sat_state->num_clauses_in_delta]);
+	print_all_clauses(sat_state);
+#endif
+
 		add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L1);
 		add_watching_clause(&sat_state->delta[sat_state->num_clauses_in_delta], sat_state->delta[sat_state->num_clauses_in_delta].L2);
+
+#ifdef DEBUG
+	printf("AFTER ADDING watching clause: Literal L1 = %ld, Literal L2 = %ld, clause = %ld", sat_state->delta[sat_state->num_clauses_in_delta].L1->sindex, sat_state->delta[sat_state->num_clauses_in_delta].L2->sindex, sat_state->delta[sat_state->num_clauses_in_delta].cindex);
+	print_all_clauses(sat_state);
+#endif
 	}
 	else{ //unit clause
 		sat_state->delta[sat_state->num_clauses_in_delta].L1 = sat_state->delta[sat_state->num_clauses_in_delta].literals[0];
@@ -135,7 +146,7 @@ static void update_delta_with_alpha(SatState* sat_state){
 #endif
 
 	// update the index of the new added clause
-	sat_state->delta[sat_state->num_clauses_in_delta].cindex = sat_state->num_clauses_in_delta; //- 1 +1 ; // remember the indices are from 0 to n-1
+	sat_state->delta[sat_state->num_clauses_in_delta].cindex = sat_state->num_clauses_in_delta +1 ; // remember the indices are from 0 to n-1
 
 #ifdef DEBUG
 	printf("Index of the new clause: %ld\n",sat_state->delta[sat_state->num_clauses_in_delta].cindex);
@@ -382,7 +393,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 	wl->is_subsumed = 0;
 	wl->max_size_list_literals = 1;
 	wl->num_literals_in_clause = 0;
-	wl->cindex = sat_state->num_clauses_in_delta;// - 1 + 1; // the learnt clause will have the next index in delta (remember it is from 0 to n-1)
+	wl->cindex = sat_state->num_clauses_in_delta + 1; // the learnt clause will have the next index in delta (remember it is from 0 to n-1)
 	wl->L1 = NULL;
 	wl->L2 = NULL;
 
@@ -423,8 +434,8 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 //		}
 
 		Lit* lit = last_falsified_literal_with_predicate(wl_1,sat_state);
-		if(lit != NULL)
-			alpha_l = sat_literal_var(lit)->antecedent;
+		if(lit != NULL && sat_literal_var(lit)->antecedent != 0)
+			alpha_l = sat_index2clause(sat_literal_var(lit)->antecedent, sat_state);
 
 // added a part in the algorithm to compromise for the the non backtracking to the assertion level
 		if(alpha_l != NULL){
@@ -471,6 +482,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 		}
 	} //end of while
 
+	wl->cindex = sat_state->num_clauses_in_delta + 1; // the learnt clause will have the next index in delta (remember it is from 0 to n-1)
 	sat_state->alpha = wl;
 
 	//TODO: I have to clean wl and wl-1 somewhere

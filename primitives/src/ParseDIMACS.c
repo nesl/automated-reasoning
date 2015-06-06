@@ -47,7 +47,6 @@ void add_clause_to_literal(Lit* lit, Clause* clause){
 
 // add watching clause to the list of watching clauses over a literal (used again when you learn a new clause)
 void add_watching_clause(Clause* clause, Lit* lit){
-
 	//get clause index.
 	unsigned long index = clause->cindex;
 
@@ -139,7 +138,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].max_size_list_of_clause_of_variables = 1;				//
 		sat_state->variables[i].num_of_clauses_of_variables = 0;
 		sat_state->variables[i].list_clause_of_variables = (unsigned long*) malloc(sizeof(unsigned long) );
-		sat_state->variables[i].antecedent = NULL;
+		sat_state->variables[i].antecedent = 0;
 		sat_state->variables[i].sat_state = sat_state;
 
 		/* Initialize negative literals*/
