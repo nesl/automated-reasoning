@@ -1,7 +1,4 @@
 #!/bin/sh
 
-cd primitives
-yes | rm sat
-make sat
-cd ..
+./recompile.sh
 ./testsat.py --exec ./primitives/sat benchmarks-annotated/sampled/
