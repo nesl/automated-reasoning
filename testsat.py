@@ -189,7 +189,7 @@ def run_solver(args, filepath, solveropts):
             print("    >> End of solver output")
         else:
             print("  {} Solver returned no output for {}".format(
-                bcolors.FAIL + "∅" + bcolors.ENDC,
+                bcolors.WARNING + "∅" + bcolors.ENDC,
                 os.path.basename(filepath))
             )
 
@@ -223,7 +223,7 @@ def handle_sat_problem(args, filename):
                     if args.print_errors:
                         print("  {} Incorrect (claimed {}, was {}) on {}".format(
                             #bcolors.FAIL + "❌" + bcolors.ENDC,
-                            bcolors.WARNING + bcolors.BOLD + "x" + bcolors.ENDC,
+                            bcolors.FAIL + bcolors.BOLD + "x" + bcolors.ENDC,
                             results['answer'],
                             solution,
                             basename)
