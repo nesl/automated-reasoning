@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c99 -O0 -Wall -finline-functions -Iinclude -g -DDEBUG
+CFLAGS = -std=c99 -O0 -Wall -finline-functions -Iinclude -g #-DDEBUG
 AR = ar
 AR_FLAGS = -cq
 LIB_FILE = libsat.a

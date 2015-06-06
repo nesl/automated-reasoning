@@ -1,9 +1,12 @@
 #include "sat_api.h"
+#include "VSIDS.h"
 
 #include <time.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdbool.h>
 
+bool use_vsids = false;
 
 /******************************************************************************
  * SAT solver 
@@ -42,7 +45,13 @@ Clause* sat_aux(SatState* sat_state) {
 	//printf("Just as a stopping condition: stop at number clauses > 8\n");
 	//assert(sat_state->num_clauses_in_delta <= 100);
 #endif
-  Lit* lit = get_free_literal(sat_state);
+  Lit* lit;
+	if (use_vsids) {
+		lit = vsids_get_free_literal(sat_state);
+	} else {
+		lit = get_free_literal(sat_state);
+	}
+
   if(lit==NULL) return NULL; //all literals are implied
 
   Clause* learned = sat_decide_literal(lit,sat_state);
@@ -80,7 +89,14 @@ int main(int argc, char* argv[]) {
   char USAGE_MSG[] = "Usage: ./sat -c <cnf_file>\n";
   char* cnf_fname  = NULL;
 
-  if(argc==3 && strcmp("-c",argv[1])==0) cnf_fname = argv[2];
+  if(argc>=3 && strcmp("-c",argv[1])==0) {
+		cnf_fname = argv[2];
+		if (argc == 4) {
+			if (strcmp(argv[3], "-V") == 0) {
+				use_vsids = true;
+			}
+		}
+	}
   else {
     printf("%s",USAGE_MSG);
     exit(1);
