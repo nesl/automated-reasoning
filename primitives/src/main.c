@@ -180,21 +180,21 @@ int main(int argc, char* argv[]) {
 	// NOTE: This is a hacky kind of operation
 	// This implementaion only works on Linux
 	// by use of the /proc filesystem
-//	char * statm_filename;
-//	asprintf(&statm_filename, "/proc/%d/statm", getpid());
-//	FILE * statm_fp = fopen(statm_filename, "r");
-//	free(statm_filename);
-//
-//	char * statm_buf = NULL;
-//	size_t n = 0;
-//	getdelim(&statm_buf, &n, ' ', statm_fp);
-//
-//	long int pages = strtol(statm_buf, NULL, 10);
-//	printf("mem  = %d pages\n", pages);
-//
-//	free(statm_buf);
-//
-//	fclose(statm_fp);
+	char * statm_filename;
+	asprintf(&statm_filename, "/proc/%d/statm", getpid());
+	FILE * statm_fp = fopen(statm_filename, "r");
+	free(statm_filename);
+
+	char * statm_buf = NULL;
+	size_t n = 0;
+	getdelim(&statm_buf, &n, ' ', statm_fp);
+
+	long int pages = strtol(statm_buf, NULL, 10);
+	printf("mem  = %d pages\n", pages);
+
+	free(statm_buf);
+
+	fclose(statm_fp);
   return 0;
 }
 
