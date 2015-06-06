@@ -144,7 +144,7 @@ Var* sat_literal_var(const Lit* lit) {
 //a variable is instantiated either by decision or implication (by unit resolution)
 BOOLEAN sat_instantiated_var(const Var* var) {
 	// if the positive literal and the negative literal of the variable are set then the variable is instantiated
-	if(var->negLit->LitState == 1 || var->posLit->LitState == 1)
+	if(var->negLit->LitState == 1 && var->posLit->LitState == 1)
 		return 1;
 	else
 		return 0;

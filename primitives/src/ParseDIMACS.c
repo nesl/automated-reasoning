@@ -110,14 +110,20 @@ static int parseProblemLine(char* line, SatState* sat_state){
 #endif
 
 	//separate the string into space separated tokens
-	pch = strtok(line, " ");
+	pch = strtok(line, " \t"); //TODO: some problem lines have two spaces
 
 	while (pch != NULL){
 		// skip the p cnf part of the line
+		// skip if it is space or new line ot tab
+
+
 		if ( !strstr(pch, "p")  &&  !strstr(pch, "cnf") ) {
 #ifdef DEBUG
 			printf("%s\n", pch);
+
 #endif
+			//if(pch[0] == ' ') continue; // if the first character in the token is space then neglect this token
+
 			if(countparameters == 0 ){
 				sat_state->num_variables_in_cnf = atoi(pch);
 				//allocate memory for n of variables and at the end the number of implications will equal to the number of variables;
@@ -136,7 +142,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 			countparameters++;
 		}
 
-		pch = strtok (NULL, " ");
+		pch = strtok (NULL, " \t");
 	}
 
 //	if(pch)
@@ -304,7 +310,8 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 	while((read = getline(&line, &len, cnf_file)) != -1){
 
 		// ignore anything starts with a c or % (comment line)
-		if (line[0] == 'c' || line[0] == '%' || line[0] == ' ' || line[0] == '0' || line[0] == '\n') continue;
+		// remove the line[0] == ' '  because some clause lines start with ' '
+		if (line[0] == 'c' || line[0] == '%'  || line[0] == '0' || line[0] == '\n') continue;
 
 		// end of file
 		//if (len == 0)
