@@ -278,10 +278,10 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 	while((read = getline(&line, &len, cnf_file)) != -1){
 
 		// ignore anything starts with a c or % (comment line)
-		if (line[0] == 'c' || line[0] == '%' || line[0] == ' ') continue;
+		if (line[0] == 'c' || line[0] == '%' || line[0] == ' ' || line[0] == '0' || line[0] == '\n') continue;
 
 		// end of file
-		if (line[0] == '0') return;
+		//if (len == 0)
 
 		// parse the line that starts with p (problem line  p cnf <number of variables n> <number of clauses m>)
 		if((line)[0] == 'p'){
@@ -293,7 +293,7 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 		else
 		{
 			// read the CNF
-			sat_state->delta[clausecounter].cindex = clausecounter;
+			sat_state->delta[clausecounter].cindex = clausecounter + 1;
 			unsigned long vars = parseClause(sat_state, line, &sat_state->delta[clausecounter++]);
 #ifdef DEBUG
 			printf("Number of variables: %ld\n", vars);

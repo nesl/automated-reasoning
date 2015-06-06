@@ -124,10 +124,7 @@ def parse_metadatastr(metadatastr):
                     metadata['time'] = float(field)
                     break
 
-    if 'answer' not in metadata:
-        metadata['parse_successful'] = False
-    else:
-        metadata['parse_successful'] = True # TODO proper checking
+    metadata['parse_successful'] = 'answer' in metadata # TODO proper checking
 
     return metadata
 
@@ -175,7 +172,7 @@ def handle_sat_problem(args, filename):
         try:
             solution = open(solpath, 'r').read().rstrip("\n")
         except Exception:
-            print("!!! Error: found {0}.cnf but no {0}.sol".format(basename))
+            print("  ! Error: found {0}.cnf but no {0}.sol".format(basename))
             return
 
 

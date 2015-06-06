@@ -254,9 +254,15 @@ BOOLEAN sat_is_resolved_literal(Lit* lit){
 
 //returns a literal structure for the corresponding index
 Lit* sat_index2literal(c2dLiteral index, const SatState* sat_state) {
-	//TODO: What is this!!!!
-	//sat_state can have positive and negative literal!?
-	return 0; //dummy value
+	Lit * lit = NULL;
+	Var corresponding_var = sat_state->variables[abs(index) - 1];
+	if (index < 0) {
+		lit = corresponding_var.negLit;
+	} else if (index > 0) {
+		lit = corresponding_var.posLit;
+	}
+
+	return lit;
 }
 
 //returns the index of a literal
@@ -349,7 +355,7 @@ void sat_undo_decide_literal(SatState* sat_state) {
 //returns a clause structure for the corresponding index
 Clause* sat_index2clause(c2dSize index, const SatState* sat_state) {
 	assert(index < sat_state->num_clauses_in_delta);
-	return &(sat_state->delta[index]);
+	return &(sat_state->delta[index - 1]);
 }
 
 //returns the index of a clause
@@ -673,7 +679,7 @@ static BOOLEAN unit_resolution_case_1(SatState* sat_state){
 	printf("\n");
 #endif
 		// run the two literal watch based on the new decision
-		BOOLEAN ret = two_literal_watch(sat_state, &literals_in_last_decision, &num_last_decision_lit, &max_size_last_decision_list);
+		BOOLEAN ret = two_literal_watch(sat_state, literals_in_last_decision, num_last_decision_lit);
 
 #ifdef DEBUG
 	printf("----- sat _decide_literal ---- after running unit resolution\n");
@@ -690,6 +696,20 @@ static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 	//reset the flag
 #ifdef DEBUG
 	printf("Unit resolution case 2\n");
+	//reset the flag
+#ifdef DEBUG
+	printf("Unit resolution case 2\n");
+#endif
+	FLAG_CASE2_UNIT_RESOLUTION = 0;
+
+	//prepare the list of literals on which the unit resolution will run
+//	Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision );
+//	unsigned long max_size_decision_list = 1;
+//	unsigned long num_decision_lit = 0;
+//
+
+	//pass all the decision list again because the last level is cleared after the contradiction
+//	literals_in_decision = s
 #endif
 	FLAG_CASE2_UNIT_RESOLUTION = 0;
 
@@ -713,7 +733,7 @@ static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 	printf("\n");
 #endif
 
-	BOOLEAN ret = two_literal_watch(sat_state,&(sat_state->decisions), & (sat_state->num_literals_in_decision), & (sat_state->num_literals_in_decision) );
+	BOOLEAN ret = two_literal_watch(sat_state,sat_state->decisions, sat_state->num_literals_in_decision);
 
 #ifdef DEBUG
 	printf("----- sat _assert_clause ---- after running unit resolution\n");
@@ -787,7 +807,7 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 //		unsigned long num_decision_lit = sat_state->num_literals_in_decision;
 
 		//literals_in_decision = sat_state->decisions;
-		return two_literal_watch(sat_state, &(sat_state->decisions), & (sat_state->num_literals_in_decision), & (sat_state->num_literals_in_decision));
+		return two_literal_watch(sat_state, sat_state->decisions,sat_state->num_literals_in_decision);
 	}
 
 }
