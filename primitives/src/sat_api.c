@@ -152,20 +152,27 @@ BOOLEAN sat_instantiated_var(const Var* var) {
 
 //returns 1 if all the clauses mentioning the variable are subsumed, 0 otherwise
 BOOLEAN sat_irrelevant_var(const Var* var) {
-	c2dSize i;
-	SatState* sat_state = var->sat_state;
+	//This implementation is suggested by the TA
+	for(c2dSize i=0; i<sat_var_occurences(var); i++) {
+	    Clause* clause = sat_clause_of_var(i,var);
+	    if(!sat_subsumed_clause(clause)) return 0;
+	  }
+	  return 1;
 
-	for(i =0; i < var->num_of_clauses_of_variables; i++){
-		Clause* clause = sat_index2clause(var->list_clause_of_variables[i], sat_state);
-		if(sat_subsumed_clause(clause))
-			continue;
-		else
-			break;
-	}
-	if(i == var->num_of_clauses_of_variables)
-		return 1;
-	else
-		return 0;
+//	c2dSize i;
+//	SatState* sat_state = var->sat_state;
+//
+//	for(i =0; i < var->num_of_clauses_of_variables; i++){
+//		Clause* clause = sat_index2clause(var->list_clause_of_variables[i], sat_state);
+//		if(sat_subsumed_clause(clause))
+//			continue;
+//		else
+//			break;
+//	}
+//	if(i == var->num_of_clauses_of_variables)
+//		return 1;
+//	else
+//		return 0;
 }
 
 //returns the number of variables in the cnf of sat state
@@ -176,7 +183,8 @@ c2dSize sat_var_count(const SatState* sat_state) {
 //returns the number of clauses mentioning a variable
 //a variable is mentioned by a clause if one of its literals appears in the clause
 c2dSize sat_var_occurences(const Var* var) {
-	return var->num_of_clauses_of_variables;
+	// should return only the occurrences in the original CNF
+	return var->num_of_clauses_of_variables_in_cnf;
 }
 
 //returns the index^th clause that mentions a variable
@@ -184,10 +192,15 @@ c2dSize sat_var_occurences(const Var* var) {
 //this cannot be called on a variable that is not mentioned by any clause
 Clause* sat_clause_of_var(c2dSize index, const Var* var) {
 
-	assert(index < var->num_of_clauses_of_variables);
+	assert(index < var->num_of_clauses_of_variables_in_cnf);
 
-	if(index < var->num_of_clauses_of_variables){
-		return sat_index2clause(var->list_clause_of_variables[index], var->sat_state) ;
+#ifdef DEBUG
+	printf("sat_clause_of_var:index = %ld, num_of_clauses_of_variables_in_cnf= %ld\n", index,var->num_of_clauses_of_variables_in_cnf );
+#endif
+
+	if(index < var->num_of_clauses_of_variables_in_cnf){
+
+		return sat_index2clause(var->list_clause_of_variables_in_cnf[index], var->sat_state) ;
 	}
 	else{
 		return NULL;

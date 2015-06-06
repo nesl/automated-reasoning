@@ -19,15 +19,31 @@
  * Helper Functions
  *******************/
 
-// update the list of clause that has this variable as one of its literals
+// update the list of clauses that has this variable as one of its literals
 void add_clause_to_variable(Var* var, Clause* clause){
+	/* Update the dynmaic list which will also keep track of the learnt clauses*/
 	if(var->num_of_clauses_of_variables >= var->max_size_list_of_clause_of_variables){
 		var->max_size_list_of_clause_of_variables = var->num_of_clauses_of_variables * MALLOC_GROWTH_RATE;
 		var->list_clause_of_variables = (unsigned long*) realloc (var->list_clause_of_variables,sizeof(unsigned long) * var->max_size_list_of_clause_of_variables);
 	}
 
 	var->list_clause_of_variables[var->num_of_clauses_of_variables++] = clause->cindex;
+
 }
+
+// update the list of clauses that has this variable as one of its literals originally in the cnf
+// this list will never change
+void add_clause_to_variable_from_cnf(Var* var, Clause* clause){
+	/* Update the static list which will only keep track of the cnf clauses*/
+	if(var->num_of_clauses_of_variables_in_cnf >= var->max_size_list_of_clause_of_variables_in_cnf){
+		var->max_size_list_of_clause_of_variables_in_cnf = var->num_of_clauses_of_variables_in_cnf * MALLOC_GROWTH_RATE;
+		var->list_clause_of_variables_in_cnf = (unsigned long*) realloc (var->list_clause_of_variables_in_cnf,sizeof(unsigned long) * var->max_size_list_of_clause_of_variables_in_cnf);
+	}
+
+	var->list_clause_of_variables_in_cnf[var->num_of_clauses_of_variables_in_cnf++] = clause->cindex;
+
+}
+
 
 
 // update the list of clause that has this literal as one of its literals
@@ -135,11 +151,18 @@ static int parseProblemLine(char* line, SatState* sat_state){
 
 		/* Initialize the variables*/
 		sat_state->variables[i].index = i+1; 								// variables start with index 1 to n ;
-		sat_state->variables[i].max_size_list_of_clause_of_variables = 1;				//
-		sat_state->variables[i].num_of_clauses_of_variables = 0;
+
+		sat_state->variables[i].max_size_list_of_clause_of_variables_in_cnf = 1;
+		sat_state->variables[i].num_of_clauses_of_variables_in_cnf = 0;
+		sat_state->variables[i].list_clause_of_variables_in_cnf = (unsigned long*) malloc(sizeof(unsigned long) );
+
+		sat_state->variables[i].max_size_list_of_clause_of_variables = 1;
+		sat_state->variables[i].num_of_clauses_of_variables_in_cnf = 0;
 		sat_state->variables[i].list_clause_of_variables = (unsigned long*) malloc(sizeof(unsigned long) );
+
 		sat_state->variables[i].antecedent = 0;
 		sat_state->variables[i].sat_state = sat_state;
+		sat_state->variables[i].mark = 0;	// THIS FIELD AS IS IN THE REQUIREMENTS
 
 		/* Initialize negative literals*/
 		sat_state->variables[i].negLit = (Lit*) malloc(sizeof(Lit) );
@@ -158,6 +181,7 @@ static int parseProblemLine(char* line, SatState* sat_state){
 		sat_state->variables[i].negLit->max_size_list_contatining_clauses = 1;
 		sat_state->variables[i].negLit->variable = &(sat_state->variables[i]);
 		sat_state->variables[i].negLit->vsids_score = 0;
+
 		//sat_state->variables[i].negLit->antecedent = NULL;
 		//sat_state->variables[i].negLit->order_of_implication = 0;
 
@@ -230,6 +254,7 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 				 clause->literals[countvariables] = sat_pos_literal(var);
 
 			 add_clause_to_variable(var, clause);
+			 add_clause_to_variable_from_cnf(var, clause);
 			 add_clause_to_literal(clause->literals[countvariables], clause);
 
 //#ifdef DEBUG
@@ -256,6 +281,8 @@ static unsigned long parseClause(SatState* sat_state, char* line, Clause* clause
 		add_watching_clause(clause, clause->L1);
 		clause->L2 = NULL;
 	}
+
+	clause->mark = 0; // THIS FIELD AS IT DESCRIBED BY IN THE REQUIREMENTS
 
 	return countvariables;
 }

@@ -75,9 +75,16 @@ struct var {
 	c2dSize index; 							//variable index
 	Lit* posLit; 							// Keep track of the variable positive literal
 	Lit* negLit; 							// keep track of the variable negative literal
-	unsigned long* list_clause_of_variables;  		//	a list of clauses that have the variable inside it
+
+	/*	a list of clauses that have the variable inside it */
+	unsigned long* list_clause_of_variables;
 	unsigned long num_of_clauses_of_variables;
 	unsigned long max_size_list_of_clause_of_variables;
+
+	/* This list will never change .. it is set at the beginning and remain as is  */
+	unsigned long* list_clause_of_variables_in_cnf;
+	unsigned long num_of_clauses_of_variables_in_cnf;
+	unsigned long max_size_list_of_clause_of_variables_in_cnf;
 
 	/* for the non-chronological backtracking UIP */
 	// the unit clause used for implying the (variable) is said to be the antecedent of this literal(variable)
