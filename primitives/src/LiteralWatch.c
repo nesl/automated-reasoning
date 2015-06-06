@@ -451,7 +451,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 									//add the watching clause to the free literal
 									add_watching_clause(wclause, new_watched_lit);
 
-
+									assert(resolved_literal->sindex == wclause->L1->sindex || resolved_literal->sindex == wclause->L2->sindex );
 									// remove the resolved literal from the watch and update the clause watch list
 									if(resolved_literal->sindex == wclause->L1->sindex)
 										wclause->L1 = new_watched_lit;
