@@ -462,10 +462,10 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 		sat_state->decisions[sat_state->num_literals_in_decision++] = unit_lit;
 	}
 
-	// decrease the current decision level of sat_state here before run unit resolution.
+	//TODO: decrease the current decision level of sat_state here before run unit resolution.
 	// This is done here due to the way the main is constructed.
 	// I can't decrease the current level in the undo_unit_resolution because afterwards I am checking at_asserting_level
-	sat_state->current_decision_level -- ;
+	//sat_state->current_decision_level -- ;
 
 #ifdef DEBUG
 	printf("----- sat _assert_clause ---- before running unit resolution\n");
@@ -934,7 +934,7 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 #endif
 
 	//TODO: don't decrease this for now due to how the main function is constructed! the decision level is reduced after adding the asserting clause
-	//sat_state->current_decision_level -- ;
+	sat_state->current_decision_level -- ;
 
 }
 
@@ -945,16 +945,38 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 //it is used to decide whether the sat state is at the right decision level for adding clause.
 BOOLEAN sat_at_assertion_level(const Clause* clause, const SatState* sat_state) {
 #ifdef DEBUG
-	printf("At asserting level: current sat level: %ld\n",sat_state->current_decision_level );
-	printf("Number of literals in alpha: %ld\n",sat_state->alpha->num_literals_in_clause);
+	printf("At asserting level current sat level: %ld\n",sat_state->current_decision_level );
+	printf(" alpha:\t");
+	print_clause(sat_state->alpha);
 #endif
-//will never go inside this loop because the asserting literal is already cleaned in the undo_decide_literal! dah!
+	//The second highest level in a conflict-driven clause is
+	//known as the assertion level of the clause
+	unsigned long the_next_large_decision = 0;
+
 	for(unsigned long i = 0; i < sat_state->alpha->num_literals_in_clause; i++){
-		if(sat_state->alpha->literals[i]->decision_level == sat_state->current_decision_level)
-			return 1;
+		if(sat_state->alpha->literals[i]->decision_level > sat_state->current_decision_level)
+			continue; // we want the next highest
+		else if(sat_state->alpha->literals[i]->decision_level > the_next_large_decision ){
+			the_next_large_decision = sat_state->alpha->literals[i]->decision_level;
+		}
 	}
 
-	return 0;
+	if(sat_state->alpha->num_literals_in_clause == 1 ) // I learnt a unit clause
+		the_next_large_decision = 1; //back to where we start
+
+#ifdef DEBUG
+	printf("the asserting level of the alpha: %ld\n",the_next_large_decision);
+#endif
+	if(the_next_large_decision == sat_state->current_decision_level)
+		return 1;
+	else
+		return 0;
+
+//	for(unsigned long i = 0; i < sat_state->alpha->num_literals_in_clause; i++){
+//		if(sat_state->alpha->literals[i]->decision_level == sat_state->current_decision_level)
+//			return 1;
+//		}
+//	return 0;
 }
 
 /******************************************************************************
