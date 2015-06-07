@@ -8,6 +8,7 @@
 #include "VSIDS.h"
 
 #include <stdlib.h>
+#include <time.h>
 
 void initialize_vsids_scores (SatState * sat_state)
 {
@@ -24,13 +25,15 @@ void initialize_vsids_scores (SatState * sat_state)
 	}
 //	print_all_clauses(sat_state);
 //	printf("26\n");
+
+	srandom(time(NULL));
 }
 
 void update_vsids_scores (SatState * sat_state)
 {
 	//printf("Updating!\n");
 
-	if (rand() % 4) // very rough 25% probability
+	if (random() % 4) // very rough 25% probability
 	{
 		// divide all the "counters" by a constant
 		for (unsigned long vidx = 0; vidx < sat_state->num_variables_in_cnf; vidx++)
@@ -82,7 +85,7 @@ Lit* vsids_get_free_literal (SatState* sat_state) {
 			if (!sat_implied_literal(cur_lit))
 			{
 				// break ties with some randomization
-				if (rand() % 2) {
+				if (random() % 2) {
 					max_score = cur_lit->vsids_score;
 					max_lit = cur_lit;
 				}
@@ -104,7 +107,7 @@ Lit* vsids_get_free_literal (SatState* sat_state) {
 			if (!sat_implied_literal(cur_lit))
 			{
 				// break ties with some randomization
-				if (rand() % 2) {
+				if (random() % 2) {
 					max_score = cur_lit->vsids_score;
 					max_lit = cur_lit;
 				}
