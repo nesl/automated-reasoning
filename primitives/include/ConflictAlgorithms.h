@@ -10,7 +10,7 @@
 
 #include "sat_api.h"
 
-void add_clause_to_gamma(SatState* sat_state);
+void add_clause_to_gamma(SatState* sat_state, Clause* clause);
 
 
 //void chronological_backtracking(SatState* sat_state);

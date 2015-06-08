@@ -65,6 +65,22 @@ static BOOLEAN is_predicate_hold(Lit* lit, SatState* sat_state){
 
 // get the last falsified literal in the current decision level and not NULL antecedent
 static Lit* last_falsified_literal_with_predicate(Clause* clause, SatState* sat_state){
+#ifdef DEBUG
+//--- to be removed
+	printf("inside last_falsified_literal_with_predicate::\t");
+	print_clause(clause);
+	Lit* lit_in_curr_level = NULL;
+	unsigned long num_lit_in_current_level = 0;
+	for(unsigned long i =0; i< clause->num_literals_in_clause; i++){
+		if(clause->literals[i]->decision_level == sat_state->current_decision_level){
+			num_lit_in_current_level ++;
+			lit_in_curr_level = clause->literals[i];
+		}
+	}
+	printf("Before assert: num lit in level= %ld, num lit in clause = %ld\n", num_lit_in_current_level, clause->num_literals_in_clause);
+//----
+#endif
+
 	Lit* last_lit = NULL;
 	unsigned long index_last_literal = 0;
 	for(unsigned long i =0; i< clause->num_literals_in_clause; i++){
@@ -72,6 +88,7 @@ static Lit* last_falsified_literal_with_predicate(Clause* clause, SatState* sat_
 		for(unsigned long j=0; j< sat_state->num_literals_in_decision; j++){
 			if(sat_literal_var(cur_falsified_literal)->index == sat_literal_var(sat_state->decisions[j])->index){
 				//check predicate here as well
+				//printf("\n inside, anticiednt index = %ld\n", sat_literal_var(cur_falsified_literal)->antecedent);
 				if(is_predicate_hold(cur_falsified_literal, sat_state)){
 					if(j >= index_last_literal)
 						index_last_literal = j;
@@ -106,13 +123,14 @@ static void update_variable_and_literal_list(Clause* clause){
 }
 
 
-static void update_delta_with_alpha(SatState* sat_state){
+static void update_delta_with_alpha(SatState* sat_state, Clause* clause){
 
 	if(sat_state->num_clauses_in_delta >= sat_state->max_size_list_delta){
 			// needs to realloc the size
 			sat_state->max_size_list_delta =(sat_state->num_clauses_in_delta * MALLOC_GROWTH_RATE);
 			sat_state->delta = (Clause*) realloc( sat_state->delta, sizeof(Clause) * (sat_state->max_size_list_delta));
 	}
+	assert(clause ==  sat_state->alpha);
 	sat_state->delta[sat_state->num_clauses_in_delta] = *(sat_state->alpha); // copy the actual value
 
 	// update the watching literals L1 and L2 be careful that a learnt clause can be a unit clause
@@ -179,8 +197,8 @@ static void update_delta_with_alpha(SatState* sat_state){
 
 
 /***** Gamma is not used afterwards this is just for debugging and testing of performance so actually Gamma keeps a copy of its own clauses away from delta*/
-void add_clause_to_gamma(SatState* sat_state){
-	update_delta_with_alpha(sat_state);
+void add_clause_to_gamma(SatState* sat_state, Clause* clause){
+	update_delta_with_alpha(sat_state, clause);
 }
 
 static void add_literal_to_clause(Lit* lit, Clause* clause){
@@ -433,6 +451,13 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 //			}
 //		}
 
+		if(is_termination_condition_hold(wl_1, sat_state, USE_UIP_LEARNT_CLAUSE) == 1){ // is indeed an asserting clause // only one literal at the current decision level
+					fixed_point_achieved = 1;
+					wl = wl_1;
+					printf("====Early termination\n");
+					break;
+		}
+
 		Lit* lit = last_falsified_literal_with_predicate(wl_1,sat_state);
 		if(lit != NULL && sat_literal_var(lit)->antecedent != 0)
 			alpha_l = sat_index2clause(sat_literal_var(lit)->antecedent, sat_state);
@@ -450,6 +475,7 @@ Clause* CDCL_non_chronological_backtracking_first_UIP(SatState* sat_state){
 #ifdef DEBUG
 			printf("alpha == NULL");
 #endif
+			printf("alpha == NULL");
 			learn_trivial_clause(wl, sat_state);
 		}
 

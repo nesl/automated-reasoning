@@ -4,6 +4,39 @@
  * SAT solver 
  ******************************************************************************/
 
+static BOOLEAN evaluate_delta(SatState* sat_state){
+	BOOLEAN fails =0;
+	unsigned long clause_success = 0;
+	// just for the sake of this function but will be reset if contradiction happens
+	for(unsigned long i=0; i<sat_state->num_clauses_in_delta; i++){
+		Clause* clause = &sat_state->delta[i];
+		//check clause
+//		for(unsigned long k = 0; k<clause->num_literals_in_clause;k++){
+//			//check if the literal is asserted or not yet set
+//			if(sat_is_asserted_literal(clause->literals[k])){
+//				clause_success++;
+//				break; //don't check the other literals of the clause
+//			}
+//		} // for all literals in a clause
+		if(clause->is_subsumed == 1){
+			clause_success++;
+		}
+	}//end of for loop on clauses in delta
+
+
+	if(clause_success == sat_state->num_clauses_in_delta){
+		fails = 0;
+	}
+	else
+		fails = 1;
+
+
+	return fails;
+}
+
+
+
+
 //returns a literal which is free in the current setting of sat state  
 //a NAIVE implementation no one would use in practice
 //you are free to modify this (no need though)
@@ -58,7 +91,14 @@ int main(int argc, char* argv[]) {
 	
   //construct a sat state and then check satisfiability
   SatState* sat_state = sat_state_new(cnf_fname);
-  if(sat(sat_state)) printf("SAT\n");
+  if(sat(sat_state)){
+	  printf("SAT\n");
+	  if(evaluate_delta(sat_state)){
+		  printf("Real Model\n");
+	  }
+	  else
+		  printf("false positive\n");
+  }
   else printf("UNSAT\n");
   sat_state_free(sat_state);
 

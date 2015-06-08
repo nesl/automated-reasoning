@@ -10,7 +10,7 @@
 #include "global.h"
 #include <string.h>
 #include <stdio.h>
-
+#include <stdlib.h>
 
 #define END_OF_CLAUSE_LINE 		0
 #define INCREASE_DECISION		5
@@ -18,6 +18,27 @@
 /******************
  * Helper Functions
  *******************/
+#ifdef TEST_C2D
+void static print_DIMACS(SatState* sat_state){
+	printf("Printing DIMACS file!\n");
+	FILE *f = fopen("fileDIMACS.txt", "w");
+	if (f == NULL){
+	    printf("Error opening file!\n");
+	    exit(1);
+	}
+	for (unsigned long clauseidx =0; clauseidx< sat_state->num_clauses_in_cnf; clauseidx++){
+		Clause curclause = sat_state->delta[clauseidx];
+		for (unsigned long literalidx = 0; literalidx < curclause.num_literals_in_clause; literalidx++){
+			signed long litidx = curclause.literals[literalidx]->sindex;
+			fprintf(f, "%ld ", litidx);
+		}
+		fprintf(f,"0 \n");
+	}
+
+	fclose(f);
+}
+#endif
+
 
 // update the list of clauses that has this variable as one of its literals
 void add_clause_to_variable(Var* var, Clause* clause){
@@ -334,6 +355,10 @@ void parseDIMACS(FILE* cnf_file, SatState * sat_state){
 
 		}
 	}
+
+#ifdef TEST_C2D
+	print_DIMACS(sat_state);
+#endif
 
 //	if(line)
 //		free(line);

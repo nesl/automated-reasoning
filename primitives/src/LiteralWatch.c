@@ -308,6 +308,10 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 	unsigned long max_size_pending_list = 1;
 	unsigned long num_pending_lit = 0;
 
+
+	unsigned long initial_num_elements = num_elements;
+
+
 	for(unsigned long i =0; i< num_elements; i++){
 #ifdef DEBUG
 		printf("--------------------------------------\n");
@@ -320,6 +324,10 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 
 		if(type == CASE1 && (sat_state->decisions[i]->decision_level != sat_state->current_decision_level)){
 			continue; // don't re-evaluate this literal
+		}else if(type == CASE2 && sat_state->decisions[i]->decision_level != sat_state->current_decision_level){
+			continue;
+		}else if(type == CASE2 && sat_state->decisions[i]->decision_level == sat_state->current_decision_level && i < initial_num_elements-1){
+			continue;
 		}
 		else{
 
@@ -331,7 +339,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 			printf("Resolved Literal: %ld\n", resolved_literal->sindex);
 #endif
 
-			//TODO: Update clauses state based on the decided literal
+			//Update clauses state based on the decided literal
 			sat_update_clauses_state(decided_literal , sat_state);
 
 			//If no watching clauses on the resolved literal then do nothing and record the decision
@@ -391,7 +399,7 @@ BOOLEAN two_literal_watch(SatState* sat_state, Lit** literals_list, unsigned lon
 
 								// all literal of the clause are resolved --> contradiction
 								contradiction_flag = 1;
-								printf("-------------Contradiction happens with clause: %ld\n",wclause->cindex);
+								printf("-------------Contradiction happens with clause: %ld in level: %ld\n",wclause->cindex, sat_state->current_decision_level);
 								sat_state->conflict_clause = wclause;
 								break; //break from loop of watched clauses over this decided literal
 							}

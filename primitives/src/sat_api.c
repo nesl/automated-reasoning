@@ -21,7 +21,7 @@ BOOLEAN FLAG_CASE2_UNIT_RESOLUTION = 0;
 BOOLEAN FLAG_CASE3_UNIT_RESOLUTION = 1;  //TODO: set this to 1 in the final version
 
 
-#ifdef DEBUG
+
 void print_clause(Clause* clause){
 	printf("clause index %ld:\t", clause->cindex);
 	//printf("num literals in a clause (%ld): ",clause->num_literals_in_clause);
@@ -104,7 +104,6 @@ void print_clause_containing_literal(Lit* lit){
 	printf("\n");
 }
 
-#endif
 
 /******************************************************************************
  * We explain here the functions you need to implement
@@ -124,16 +123,25 @@ void print_clause_containing_literal(Lit* lit){
 //returns a variable structure for the corresponding index
 // index starts from 1 to n
 Var* sat_index2var(c2dSize index, const SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_index2var\n"); fflush(stdout);
+#endif
 	return &sat_state->variables[index-1];
 }
 
 //returns the index of a variable
 c2dSize sat_var_index(const Var* var) {
+#ifdef TEST_C2D
+	printf("Calling sat_var_index\n"); fflush(stdout);
+#endif
 	return var->index;
 }
 
 //returns the variable of a literal
 Var* sat_literal_var(const Lit* lit) {
+#ifdef TEST_C2D
+	printf("Calling sat_literal_var\n"); fflush(stdout);
+#endif
 //ifdef DEBUG
 //	printf("sat_literal_var: get variable for lit %ld which is var: %ld\n",lit->sindex,lit->variable->index);
 //#endif
@@ -143,6 +151,9 @@ Var* sat_literal_var(const Lit* lit) {
 //returns 1 if the variable is instantiated, 0 otherwise
 //a variable is instantiated either by decision or implication (by unit resolution)
 BOOLEAN sat_instantiated_var(const Var* var) {
+#ifdef TEST_C2D
+	printf("Calling sat_instantiated_var\n"); fflush(stdout);
+#endif
 	// if the positive literal and the negative literal of the variable are set then the variable is instantiated
 	if(var->negLit->LitState == 1 && var->posLit->LitState == 1)
 		return 1;
@@ -152,6 +163,9 @@ BOOLEAN sat_instantiated_var(const Var* var) {
 
 //returns 1 if all the clauses mentioning the variable are subsumed, 0 otherwise
 BOOLEAN sat_irrelevant_var(const Var* var) {
+#ifdef TEST_C2D
+	printf("Calling sat_irrelevant_var\n"); fflush(stdout);
+#endif
 	//This implementation is suggested by the TA
 	for(c2dSize i=0; i<sat_var_occurences(var); i++) {
 	    Clause* clause = sat_clause_of_var(i,var);
@@ -177,12 +191,18 @@ BOOLEAN sat_irrelevant_var(const Var* var) {
 
 //returns the number of variables in the cnf of sat state
 c2dSize sat_var_count(const SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_var_count\n"); fflush(stdout);
+#endif
 	return sat_state->num_variables_in_cnf;
 }
 
 //returns the number of clauses mentioning a variable
 //a variable is mentioned by a clause if one of its literals appears in the clause
 c2dSize sat_var_occurences(const Var* var) {
+#ifdef TEST_C2D
+	printf("Calling sat_var_occurences\n"); fflush(stdout);
+#endif
 	// should return only the occurrences in the original CNF
 	return var->num_of_clauses_of_variables_in_cnf;
 }
@@ -191,7 +211,9 @@ c2dSize sat_var_occurences(const Var* var) {
 //index starts from 0, and is less than the number of clauses mentioning the variable
 //this cannot be called on a variable that is not mentioned by any clause
 Clause* sat_clause_of_var(c2dSize index, const Var* var) {
-
+#ifdef TEST_C2D
+	printf("Calling sat_clause_of_var\n"); fflush(stdout);
+#endif
 	assert(index < var->num_of_clauses_of_variables_in_cnf);
 
 #ifdef DEBUG
@@ -213,6 +235,9 @@ Clause* sat_clause_of_var(c2dSize index, const Var* var) {
  ******************************************************************************/
 
 BOOLEAN sat_is_asserted_literal(Lit* lit){
+#ifdef TEST_C2D
+	printf("Calling sat_is_asserted_literal\n"); fflush(stdout);
+#endif
 	if(lit->sindex<0){
 		switch(lit->LitValue){
 		case 0:
@@ -251,6 +276,9 @@ BOOLEAN sat_is_asserted_literal(Lit* lit){
 }
 
 BOOLEAN sat_is_resolved_literal(Lit* lit){
+#ifdef TEST_C2D
+	printf("Calling sat_is_resolved_literal\n"); fflush(stdout);
+#endif
 	if(lit->sindex<0){
 		switch(lit->LitValue){
 		case 1:
@@ -289,6 +317,9 @@ BOOLEAN sat_is_resolved_literal(Lit* lit){
 
 //returns a literal structure for the corresponding index
 Lit* sat_index2literal(c2dLiteral index, const SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_index2literal\n"); fflush(stdout);
+#endif
 	Lit * lit = NULL;
 	Var corresponding_var = sat_state->variables[abs(index) - 1];
 	if (index < 0) {
@@ -302,23 +333,36 @@ Lit* sat_index2literal(c2dLiteral index, const SatState* sat_state) {
 
 //returns the index of a literal
 c2dLiteral sat_literal_index(const Lit* lit) {
+#ifdef TEST_C2D
+	printf("Calling sat_literal_index\n"); fflush(stdout);
+#endif
 	return lit->sindex;
 }
 
 //returns the positive literal of a variable
 Lit* sat_pos_literal(const Var* var) {
+#ifdef TEST_C2D
+	printf("Calling sat_pos_literal\n"); fflush(stdout);
+#endif
 	return var->posLit;
 }
 
 //returns the negative literal of a variable
 Lit* sat_neg_literal(const Var* var) {
+#ifdef TEST_C2D
+	printf("Calling sat_neg_literal\n"); fflush(stdout);
+#endif
 	return var->negLit;
 }
 
 //returns 1 if the literal is implied, 0 otherwise
 //a literal is implied by deciding its variable, or by inference using unit resolution
 BOOLEAN sat_implied_literal(const Lit* lit) {
-	return lit->LitState;
+#ifdef TEST_C2D
+	printf("Calling sat_implied_literal\n"); fflush(stdout);
+#endif
+
+	return sat_is_asserted_literal(lit);
 }
 
 //sets the literal to true, and then runs unit resolution
@@ -327,7 +371,9 @@ BOOLEAN sat_implied_literal(const Lit* lit) {
 //if the current decision level is L in the beginning of the call, it should be updated 
 //to L+1 so that the decision level of lit and all other literals implied by unit resolution is L+1
 Clause* sat_decide_literal(Lit* lit, SatState* sat_state) {
-
+#ifdef TEST_C2D
+	printf("Calling sat_decide_literal\n"); fflush(stdout);
+#endif
 	assert(lit!=NULL);
 
 	lit->LitState = 1;
@@ -380,6 +426,9 @@ Clause* sat_decide_literal(Lit* lit, SatState* sat_state) {
 //if the current decision level is L in the beginning of the call, it should be updated 
 //to L-1 before the call ends
 void sat_undo_decide_literal(SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_undo_decide_literal\n"); fflush(stdout);
+#endif
 	sat_undo_unit_resolution(sat_state);
 }
 
@@ -389,6 +438,9 @@ void sat_undo_decide_literal(SatState* sat_state) {
 
 //returns a clause structure for the corresponding index
 Clause* sat_index2clause(c2dSize index, const SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_index2clause\n"); fflush(stdout);
+#endif
 	assert(index <= sat_state->num_clauses_in_delta);
 	return &(sat_state->delta[index - 1]);
 }
@@ -398,31 +450,49 @@ Clause* sat_index2clause(c2dSize index, const SatState* sat_state) {
 
 //returns the index of a clause
 c2dSize sat_clause_index(const Clause* clause) {
+#ifdef TEST_C2D
+	printf("Calling sat_clause_index\n"); fflush(stdout);
+#endif
 	return clause->cindex;
 }
 
 //returns the literals of a clause
 Lit** sat_clause_literals(const Clause* clause) {
+#ifdef TEST_C2D
+	printf("Calling sat_clause_literals\n"); fflush(stdout);
+#endif
 	return clause->literals;
 }
 
 //returns the number of literals in a clause
 c2dSize sat_clause_size(const Clause* clause) {
+#ifdef TEST_C2D
+	printf("Calling sat_clause_size\n"); fflush(stdout);
+#endif
 	return clause->num_literals_in_clause;
 }
 
 //returns 1 if the clause is subsumed, 0 otherwise
 BOOLEAN sat_subsumed_clause(const Clause* clause) {
+#ifdef TEST_C2D
+	printf("Calling sat_subsumed_clause\n"); fflush(stdout);
+#endif
 	return clause->is_subsumed; //TODO: don't forget to update the state of the clause after unit resolution
 }
 
 //returns the number of clauses in the cnf of sat state
 c2dSize sat_clause_count(const SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_clause_count\n"); fflush(stdout);
+#endif
 	return sat_state->num_clauses_in_cnf;
 }
 
 //returns the number of learned clauses in a sat state (0 when the sat state is constructed)
 c2dSize sat_learned_clause_count(const SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_learned_clause_count\n"); fflush(stdout);
+#endif
 	return sat_state->num_clauses_in_gamma;
 }
 
@@ -432,35 +502,70 @@ c2dSize sat_learned_clause_count(const SatState* sat_state) {
 //this function is called on a clause returned by sat_decide_literal() or sat_assert_clause()
 //moreover, it should be called only if sat_at_assertion_level() succeeds
 Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
-
+#ifdef TEST_C2D
+	printf("Calling sat_assert_clause\n"); fflush(stdout);
+#endif
 	update_vsids_scores(sat_state); // it uses alpha
 
 	//learn clause
 	// update the gamma list with the new alpha (just for performance analysis)
-	add_clause_to_gamma(sat_state); // it adds alpha to gamma and clears it
+	add_clause_to_gamma(sat_state, clause); // it adds alpha to gamma and clears it
 
 
+	Lit* free_lit = NULL;
+	unsigned long num_free_literals = 0;
 	// Check if the learnt clause is unit clause (the last added clause in delta) then add it directly to decisions
-	if(sat_state->delta[sat_state->num_clauses_in_delta -1].num_literals_in_clause == 1){
-		Clause* unit_clause = &sat_state->delta[sat_state->num_clauses_in_delta -1];
-#ifdef DEBUG
-		printf("sat_assert_clause: the learnt clause %ld is a unit clause with literal %ld\n", unit_clause->cindex, unit_clause->literals[0]->sindex );
-#endif
-		// a unit clause
-		Lit* unit_lit = unit_clause->literals[0];
-		//update the literal parameters (decide it)
-		//Set lit values
-		if(unit_lit->sindex < 0)
-			unit_lit->LitValue = 0;
-		else if (unit_lit->sindex > 0)
-			unit_lit->LitValue = 1;
-
-		unit_lit->decision_level = 1; // because it is unit (not a decision)
-		unit_lit->LitState = 1;
-
-		//add it in the decision list without incrementing the decision level
-		sat_state->decisions[sat_state->num_literals_in_decision++] = unit_lit;
+	for(unsigned long litidx =0; litidx < clause->num_literals_in_clause; litidx++){
+		if(clause->literals[litidx]->LitState == 0){
+			num_free_literals++;
+			free_lit = clause->literals[litidx];
+		}
 	}
+
+	assert(num_free_literals == 1);
+
+	//update the literal parameters (decide it)
+	//Set lit values
+	if(free_lit->sindex < 0)
+		free_lit->LitValue = 0;
+	else if (free_lit->sindex > 0)
+		free_lit->LitValue = 1;
+
+	free_lit->decision_level = sat_state->current_decision_level; //1; // because it is unit (not a decision)
+	free_lit->LitState = 1;
+
+	//add it in the decision list without incrementing the decision level
+	sat_state->decisions[sat_state->num_literals_in_decision++] = free_lit;
+	if(clause->num_literals_in_clause == 1){
+		sat_literal_var(free_lit)->antecedent=0;
+	}
+	else{
+		sat_literal_var(free_lit)->antecedent=clause->cindex;
+	}
+
+//	if(sat_state->delta[sat_state->num_clauses_in_delta -1].num_literals_in_clause == 1){
+//		Clause* unit_clause = &sat_state->delta[sat_state->num_clauses_in_delta -1];
+//#ifdef DEBUG
+//		printf("sat_assert_clause: the learnt clause %ld is a unit clause with literal %ld\n", unit_clause->cindex, unit_clause->literals[0]->sindex );
+//#endif
+//		// a unit clause
+//		Lit* unit_lit = unit_clause->literals[0];
+//		//update the literal parameters (decide it)
+//		//Set lit values
+//		if(unit_lit->sindex < 0)
+//			unit_lit->LitValue = 0;
+//		else if (unit_lit->sindex > 0)
+//			unit_lit->LitValue = 1;
+//
+//		unit_lit->decision_level = sat_state->current_decision_level; //1; // because it is unit (not a decision)
+//		unit_lit->LitState = 1;
+//
+//		//add it in the decision list without incrementing the decision level
+//		sat_state->decisions[sat_state->num_literals_in_decision++] = unit_lit;
+//	}
+//	else{
+//
+//	}
 
 	//TODO: decrease the current decision level of sat_state here before run unit resolution.
 	// This is done here due to the way the main is constructed.
@@ -492,6 +597,9 @@ Clause* sat_assert_clause(Clause* clause, SatState* sat_state) {
 
 //added API: Update the state of the clause if a literal is decided or implied i.e. asserted
 void sat_update_clauses_state(Lit* lit, SatState* sat_state){
+#ifdef TEST_C2D
+	printf("Calling sat_update_clauses_state\n"); fflush(stdout);
+#endif
 	if(sat_is_asserted_literal(lit)){
 		for(unsigned long i =0; i<lit->num_containing_clause; i++){
 			Clause* clause = sat_index2clause(lit->list_of_containing_clauses[i], sat_state);
@@ -504,6 +612,9 @@ void sat_update_clauses_state(Lit* lit, SatState* sat_state){
 }
 //added API: Undo state of clause of undecided literal which was asserted called at undo unit resolution took place
 void sat_undo_clauses_state(Lit* lit, SatState* sat_state){
+#ifdef TEST_C2D
+	printf("Calling sat_undo_clauses_state\n"); fflush(stdout);
+#endif
 	if(sat_is_asserted_literal(lit)){
 		for(unsigned long i =0; i<lit->num_containing_clause; i++){
 			Clause* clause = sat_index2clause(lit->list_of_containing_clauses[i], sat_state);;
@@ -536,6 +647,9 @@ void sat_undo_clauses_state(Lit* lit, SatState* sat_state){
 
 //constructs a SatState from an input cnf file
 SatState* sat_state_new(const char* file_name) {
+#ifdef TEST_C2D
+	printf("Calling sat_state_new\n"); fflush(stdout);
+#endif
 	//initialization
   SatState* sat_state = (SatState *) malloc (sizeof (SatState));
 
@@ -581,6 +695,10 @@ SatState* sat_state_new(const char* file_name) {
 
 //frees the SatState
 void sat_state_free(SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_state_free\n"); fflush(stdout);
+#endif
+
 #ifdef DEBUG
 	printf("Start freeing sat ----\n");
 #endif
@@ -610,6 +728,9 @@ void sat_state_free(SatState* sat_state) {
 
 // FREEs everything within a variable, but not the variable itself
 void variable_cleanup (Var * variable) {
+#ifdef TEST_C2D
+//	printf("Calling variable_cleanup\n"); fflush(stdout);
+#endif
 	// right now the only allocated objects within a variable are
 	// the literals to which it points:
 	literal_free(variable->posLit);
@@ -618,6 +739,9 @@ void variable_cleanup (Var * variable) {
 }
 
 void literal_free (Lit * literal) {
+#ifdef TEST_C2D
+	//printf("Calling literal_free\n"); fflush(stdout);
+#endif
 	FREE(literal->list_of_watched_clauses);
 	FREE(literal->list_of_dirty_watched_clauses);
 	FREE(literal->list_of_containing_clauses);
@@ -658,7 +782,9 @@ void literal_free (Lit * literal) {
  * Yet, the first decided literal must have 2 as its decision level
  ******************************************************************************/
 static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, unsigned long* num_elements){
-
+#ifdef TEST_C2D
+	printf("Calling add_literal_to_list\n"); fflush(stdout);
+#endif
 	unsigned long cap = *capacity;
 	unsigned long num = *num_elements;
 
@@ -674,6 +800,10 @@ static void add_literal_to_list(Lit** list, Lit* lit, unsigned long* capacity, u
 		*capacity = cap;
 }
 static BOOLEAN unit_resolution_case_1(SatState* sat_state){
+//#ifdef TEST_C2D
+	//printf("Calling unit_resolution_case_1\n"); fflush(stdout);
+//#endif
+
 #ifdef DEBUG
 	printf("Unit resolution case 1\n");
 #endif
@@ -709,13 +839,13 @@ static BOOLEAN unit_resolution_case_1(SatState* sat_state){
 //	#endif
 
 
-#ifdef DEBUG
+//#ifdef DEBUG
 	//printf("Decisions in the list for the two literal watch: ");
 	//for(unsigned long i =0; i<num_last_decision_lit; i++){
 	//	printf("%ld\t", literals_in_last_decision[i]->sindex);
 	//}
 	//printf("\n");
-#endif
+//#endif
 		// run the two literal watch based on the new decision
 		//BOOLEAN ret = two_literal_watch(sat_state, literals_in_last_decision, num_last_decision_lit);
 		BOOLEAN ret = two_literal_watch(sat_state, sat_state->decisions, sat_state->num_literals_in_decision, CASE1);
@@ -736,10 +866,6 @@ static BOOLEAN unit_resolution_case_2(SatState* sat_state){
 #ifdef DEBUG
 	printf("Unit resolution case 2\n");
 	//reset the flag
-#ifdef DEBUG
-	printf("Unit resolution case 2\n");
-#endif
-	FLAG_CASE2_UNIT_RESOLUTION = 0;
 
 	//prepare the list of literals on which the unit resolution will run
 //	Lit** literals_in_decision = (Lit**)malloc(sizeof(Lit*) * sat_state->num_literals_in_decision );
@@ -853,7 +979,9 @@ static BOOLEAN unit_resolution_case_3(SatState* sat_state){
 //applies unit resolution to the cnf of sat state
 //returns 1 if unit resolution succeeds, 0 if it finds a contradiction
 BOOLEAN sat_unit_resolution(SatState* sat_state) {
-
+#ifdef TEST_C2D
+	printf("Calling sat_unit_resolution\n"); fflush(stdout);
+#endif
 	if(FLAG_CASE3_UNIT_RESOLUTION == 1){
 		return unit_resolution_case_3(sat_state);
 	}
@@ -870,6 +998,10 @@ BOOLEAN sat_unit_resolution(SatState* sat_state) {
 //undoes sat_unit_resolution(), leading to un-instantiating variables that have been instantiated
 //after sat_unit_resolution()
 void sat_undo_unit_resolution(SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_undo_unit_resolution\n"); fflush(stdout);
+#endif
+
 #ifdef DEBUG
 	printf("Undo unit resolution:\n");
 #endif
@@ -944,24 +1076,28 @@ void sat_undo_unit_resolution(SatState* sat_state) {
 //this function is called after sat_decide_literal() or sat_assert_clause() returns clause.
 //it is used to decide whether the sat state is at the right decision level for adding clause.
 BOOLEAN sat_at_assertion_level(const Clause* clause, const SatState* sat_state) {
+#ifdef TEST_C2D
+	printf("Calling sat_at_assertion_level\n"); fflush(stdout);
+#endif
+
 #ifdef DEBUG
 	printf("At asserting level current sat level: %ld\n",sat_state->current_decision_level );
 	printf(" alpha:\t");
-	print_clause(sat_state->alpha);
+	print_clause(clause);
 #endif
 	//The second highest level in a conflict-driven clause is
 	//known as the assertion level of the clause
 	unsigned long the_next_large_decision = 0;
 
-	for(unsigned long i = 0; i < sat_state->alpha->num_literals_in_clause; i++){
-		if(sat_state->alpha->literals[i]->decision_level > sat_state->current_decision_level)
+	for(unsigned long i = 0; i < clause->num_literals_in_clause; i++){
+		if(clause->literals[i]->decision_level > sat_state->current_decision_level)
 			continue; // we want the next highest
-		else if(sat_state->alpha->literals[i]->decision_level > the_next_large_decision ){
-			the_next_large_decision = sat_state->alpha->literals[i]->decision_level;
+		else if(clause->literals[i]->decision_level > the_next_large_decision ){
+			the_next_large_decision = clause->literals[i]->decision_level;
 		}
 	}
 
-	if(sat_state->alpha->num_literals_in_clause == 1 ) // I learnt a unit clause
+	if(clause->num_literals_in_clause == 1 ) // I learnt a unit clause
 		the_next_large_decision = 1; //back to where we start
 
 #ifdef DEBUG

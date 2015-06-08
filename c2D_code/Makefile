@@ -4,7 +4,7 @@ OS := $(shell uname)
 EXEC_FILE = c2D
 
 ifeq ($(OS),Darwin) 
-  LIB := lib/darwin
+  LIB := lib/darwin 
   BIN := bin/darwin
 else ifeq ($(OS),Linux)
   LIB := lib/linux
