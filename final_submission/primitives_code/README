@@ -1,0 +1,21 @@
+This folder contains the SAT primitives developed by Salma Elmalaki and Mat Miller.
+The library can be compiled using the makefile included in the “primitives” folder.
+
+To compile the library use: 
+make sat
+
+==========================================
+		IMPORTANT NOTE: 
+==========================================
+to allow for forward declaration of data structures, the header file sat_api.h contains the following lines:
+
+/******************************************************************************
+ * Forward declarations
+ ******************************************************************************/
+typedef struct var Var;
+typedef struct literal Lit;
+typedef struct clause Clause;
+typedef struct sat_state_t SatState;
+
+
+We note that the C2D compiler re-declares these type definitions which can lead to compilation errors/warnings. In such case, these lines needs to be commented after the static library is compiled and before it is linked in the C2D project.
